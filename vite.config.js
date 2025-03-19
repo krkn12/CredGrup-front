@@ -3,9 +3,9 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: '/', // Já está correto pra Vercel
+  base: '/',
   build: {
-    outDir: 'dist', // Padrão, mas explicitando pra garantir
-    sourcemap: false, // Desativa sourcemaps em produção pra reduzir tamanho
+    outDir: 'dist',
+    sourcemap: false,
   },
 });
