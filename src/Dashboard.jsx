@@ -4,7 +4,7 @@ import Navbar from "./Pages/Navbar";
 import Inicio from "./Pages/Inicio";
 import Page_user from "./Pages/Page_user";
 import Page_admin from "./Components/Page_admin";
-import Auth from "./Pages/Auth";
+import Auth from "./Pages/auth";
 
 function Dashboard({ currentUser, onLogin, onLogout }) {
   const location = useLocation();
