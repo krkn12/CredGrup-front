@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { FiletypePdf, ChevronLeft, ChevronRight } from "react-bootstrap-icons";
 import api from "../services/api";
 import { processarVendaWBTC } from "../Hooks/Venderbitcoin";
+import Investments from "../components/Investments";
 import {
   processarDeposito,
   metodosPagamento,
@@ -66,10 +67,14 @@ function Page_user({ currentUser }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(7);
   const [totalPages, setTotalPages] = useState(1);
-  const [walletData, setWalletData] = useState({ wbtcBalance: 0, lastUpdated: null });
+  const [walletData, setWalletData] = useState({
+    wbtcBalance: 0,
+    lastUpdated: null,
+  });
   const [walletHistory, setWalletHistory] = useState([]); // Novo estado para o histórico
   const [walletLoading, setWalletLoading] = useState(true);
-  const { exportFullStatement, exportCustomStatement, exportTransaction } = useStatementExport();
+  const { exportFullStatement, exportCustomStatement, exportTransaction } =
+    useStatementExport();
 
   // Função para gerar um histórico simplificado baseado no saldo atual
   const fetchWalletHistory = (wbtcBalance) => {
@@ -80,7 +85,8 @@ function Page_user({ currentUser }) {
       const date = new Date(today);
       date.setMonth(today.getMonth() - i);
       const growthFactor = 1 - i / 24;
-      const currentValue = initialBalance + (wbtcBalance - initialBalance) * growthFactor;
+      const currentValue =
+        initialBalance + (wbtcBalance - initialBalance) * growthFactor;
       dataPoints.push({
         date: date.toISOString().split("T")[0],
         value: currentValue,
@@ -238,8 +244,10 @@ function Page_user({ currentUser }) {
   };
 
   const handleValorPagamentoChange = (e) => setValorPagamento(e.target.value);
-  const handleDescricaoPagamentoChange = (e) => setDescricaoPagamento(e.target.value);
-  const handleCategoriaPagamentoChange = (e) => setCategoriaPagamento(e.target.value);
+  const handleDescricaoPagamentoChange = (e) =>
+    setDescricaoPagamento(e.target.value);
+  const handleCategoriaPagamentoChange = (e) =>
+    setCategoriaPagamento(e.target.value);
 
   const handleProcessarPagamentoPix = async () => {
     setPixLoading(true);
@@ -252,7 +260,9 @@ function Page_user({ currentUser }) {
           ...prev,
           paymentHistory: [resultado.novoPagamento, ...prev.paymentHistory],
         }));
-        setTotalPages(Math.ceil((userData.paymentHistory.length + 1) / itemsPerPage));
+        setTotalPages(
+          Math.ceil((userData.paymentHistory.length + 1) / itemsPerPage)
+        );
         setPixMensagem({
           tipo: "sucesso",
           texto: "Pagamento registrado! Aguarde a aprovação do administrador.",
@@ -319,7 +329,8 @@ function Page_user({ currentUser }) {
       const valor = parseFloat(valorDeposito);
       if (!valor || valor <= 0) throw new Error("Valor inválido");
       if (!metodoDeposito) throw new Error("Selecione um método de pagamento");
-      if (metodoDeposito !== "pix") throw new Error("Apenas o método PIX está disponível");
+      if (metodoDeposito !== "pix")
+        throw new Error("Apenas o método PIX está disponível");
       if (!comprovanteArquivo) throw new Error("O comprovante é obrigatório");
 
       const metodo = metodosPagamento.find((m) => m.id === metodoDeposito);
@@ -351,16 +362,22 @@ function Page_user({ currentUser }) {
         paymentHistory: [novoDeposito, ...prev.paymentHistory],
       }));
 
-      setTotalPages(Math.ceil((userData.paymentHistory.length + 1) / itemsPerPage));
+      setTotalPages(
+        Math.ceil((userData.paymentHistory.length + 1) / itemsPerPage)
+      );
       setDepositoMensagem({
         tipo: "sucesso",
-        texto: "Depósito registrado! Aguarde até 10 minutos para processamento.",
+        texto:
+          "Depósito registrado! Aguarde até 10 minutos para processamento.",
       });
       setTimeout(() => setShowDepositoModal(false), 5000);
     } catch (error) {
       setDepositoMensagem({
         tipo: "erro",
-        texto: error.message || error.response?.data?.message || "Erro ao processar depósito",
+        texto:
+          error.message ||
+          error.response?.data?.message ||
+          "Erro ao processar depósito",
       });
     } finally {
       setDepositoLoading(false);
@@ -394,7 +411,8 @@ function Page_user({ currentUser }) {
 
       const result = await processarVendaWBTC(wbtcToSell, {
         onInicio: () => setSellLoading(true),
-        onErro: (mensagem) => setSellMensagem({ tipo: "erro", texto: mensagem }),
+        onErro: (mensagem) =>
+          setSellMensagem({ tipo: "erro", texto: mensagem }),
         onFim: () => setSellLoading(false),
       });
 
@@ -408,11 +426,17 @@ function Page_user({ currentUser }) {
         paymentHistory: [transaction, ...prev.paymentHistory],
       }));
 
-      setTotalPages(Math.ceil(((userData.paymentHistory?.length || 0) + 1) / itemsPerPage));
+      setTotalPages(
+        Math.ceil(((userData.paymentHistory?.length || 0) + 1) / itemsPerPage)
+      );
 
       setSellMensagem({
         tipo: "sucesso",
-        texto: `Venda de ${wbtcToSell.toFixed(8)} WBTC realizada com sucesso! Recebido: R$ ${transaction.amount.toFixed(2)} (Taxa: R$ ${transaction.taxa?.toFixed(2) || "0.00"}). +1 ponto!`,
+        texto: `Venda de ${wbtcToSell.toFixed(
+          8
+        )} WBTC realizada com sucesso! Recebido: R$ ${transaction.amount.toFixed(
+          2
+        )} (Taxa: R$ ${transaction.taxa?.toFixed(2) || "0.00"}). +1 ponto!`,
       });
 
       setTimeout(() => setShowSellModal(false), 3000);
@@ -420,7 +444,10 @@ function Page_user({ currentUser }) {
       console.error("Erro na venda:", error);
       setSellMensagem({
         tipo: "erro",
-        texto: error.response?.data?.error || error.message || "Erro ao processar a venda. Tente novamente.",
+        texto:
+          error.response?.data?.error ||
+          error.message ||
+          "Erro ao processar a venda. Tente novamente.",
       });
       setSellLoading(false);
     }
@@ -476,8 +503,10 @@ function Page_user({ currentUser }) {
     return userData.paymentHistory.slice(indexOfFirstItem, indexOfLastItem);
   };
 
-  const goToNextPage = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
-  const goToPreviousPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
+  const goToNextPage = () =>
+    currentPage < totalPages && setCurrentPage(currentPage + 1);
+  const goToPreviousPage = () =>
+    currentPage > 1 && setCurrentPage(currentPage - 1);
   const goToPage = (pageNumber) => setCurrentPage(pageNumber);
 
   const renderPageNumbers = () => {
@@ -490,7 +519,10 @@ function Page_user({ currentUser }) {
     }
     for (let i = startPage; i <= endPage; i++) {
       pageNumbers.push(
-        <li key={i} className={`page-item ${currentPage === i ? "active" : ""}`}>
+        <li
+          key={i}
+          className={`page-item ${currentPage === i ? "active" : ""}`}
+        >
           <button className="page-link" onClick={() => goToPage(i)}>
             {i}
           </button>
@@ -516,13 +548,20 @@ function Page_user({ currentUser }) {
       </div>
     );
   }
+  const updateUserData = (newData) => {
+    setUserData((prev) => ({ ...prev, ...newData }));
+  };
 
   return (
     <div className="container">
       <div className="row">
         <div className="col-md-8">
-          <h1 className="user-title">Bem-vindo, {userData.name.split(" ")[0]}! 👋</h1>
-          <p className="user-subtitle">Gerencie suas contas e recompensas aqui.</p>
+          <h1 className="user-title">
+            Bem-vindo, {userData.name.split(" ")[0]}! 👋
+          </h1>
+          <p className="user-subtitle">
+            Gerencie suas contas e recompensas aqui.
+          </p>
         </div>
         <div className="col-md-4">
           <div className="points-section d-flex justify-content-md-end justify-content-center">
@@ -548,14 +587,19 @@ function Page_user({ currentUser }) {
               <div className="d-flex justify-content-between align-items-center mb-2">
                 <div>
                   <p className="card-text mb-0">
-                    <strong>{(userData.wbtcBalance || 0).toFixed(8)} WBTC</strong>
+                    <strong>
+                      {(userData.wbtcBalance || 0).toFixed(8)} WBTC
+                    </strong>
                     <br />
                     <small>
                       1 WBTC ={" "}
                       {wbtcBrlPrice ? (
                         <span>
                           R$ {wbtcBrlPrice.toFixed(2)}
-                          <span className="ms-1 text-success" style={{ fontSize: "0.8em" }}>
+                          <span
+                            className="ms-1 text-success"
+                            style={{ fontSize: "0.8em" }}
+                          >
                             <span
                               className="spinner-grow spinner-grow-sm"
                               role="status"
@@ -570,7 +614,10 @@ function Page_user({ currentUser }) {
                     </small>
                   </p>
                 </div>
-                <button className="btn btn-outline-warning" onClick={handleSellWbtc}>
+                <button
+                  className="btn btn-outline-warning"
+                  onClick={handleSellWbtc}
+                >
                   Vender
                 </button>
               </div>
@@ -587,10 +634,16 @@ function Page_user({ currentUser }) {
             <div className="card-body">
               <h5 className="card-title">Ações Rápidas</h5>
               <div className="d-flex gap-2">
-                <button className="btn btn-warning flex-grow-1" onClick={handlePayBill}>
+                <button
+                  className="btn btn-warning flex-grow-1"
+                  onClick={handlePayBill}
+                >
                   Pagar Conta
                 </button>
-                <button className="btn btn-warning flex-grow-1" onClick={handleDeposit}>
+                <button
+                  className="btn btn-warning flex-grow-1"
+                  onClick={handleDeposit}
+                >
                   Depositar
                 </button>
               </div>
@@ -603,7 +656,9 @@ function Page_user({ currentUser }) {
         <div className="col-12">
           <div className="card">
             <div className="card-body">
-              <h5 className="card-title">Histórico da Carteira WBTC (Arbitrum One)</h5>
+              <h5 className="card-title">
+                Histórico da Carteira WBTC (Arbitrum One)
+              </h5>
               <p className="wallet-address">
                 <small>Endereço: {walletAddress}</small>
               </p>
@@ -623,7 +678,10 @@ function Page_user({ currentUser }) {
                         dataKey="date"
                         tickFormatter={(date) => {
                           const d = new Date(date);
-                          return `${d.getMonth() + 1}/${d.getFullYear().toString().substr(2, 2)}`;
+                          return `${d.getMonth() + 1}/${d
+                            .getFullYear()
+                            .toString()
+                            .substr(2, 2)}`;
                         }}
                         interval={3}
                       />
@@ -632,8 +690,13 @@ function Page_user({ currentUser }) {
                         domain={["dataMin", "dataMax"]}
                       />
                       <Tooltip
-                        formatter={(value) => [`${value.toFixed(8)} WBTC`, "Saldo"]}
-                        labelFormatter={(date) => `Data: ${new Date(date).toLocaleDateString()}`}
+                        formatter={(value) => [
+                          `${value.toFixed(8)} WBTC`,
+                          "Saldo",
+                        ]}
+                        labelFormatter={(date) =>
+                          `Data: ${new Date(date).toLocaleDateString()}`
+                        }
                       />
                       <Line
                         type="monotone"
@@ -647,7 +710,9 @@ function Page_user({ currentUser }) {
                   </ResponsiveContainer>
                   <div className="text-center mt-1">
                     <small className="text-muted">
-                      Saldo atual: {walletData.wbtcBalance.toFixed(8)} WBTC | Última atualização: {new Date(walletData.lastUpdated).toLocaleString("pt-BR")}
+                      Saldo atual: {walletData.wbtcBalance.toFixed(8)} WBTC |
+                      Última atualização:{" "}
+                      {new Date(walletData.lastUpdated).toLocaleString("pt-BR")}
                     </small>
                   </div>
                 </div>
@@ -656,7 +721,15 @@ function Page_user({ currentUser }) {
           </div>
         </div>
       </div>
-
+      <div className="row">
+        <div className="col-12">
+          <Investments
+            currentUser={currentUser}
+            saldoReais={userData.saldoReais}
+            updateUserData={updateUserData}
+          />
+        </div>
+      </div>
       <div className="row">
         <div className="col-12">
           <div className="card">
@@ -664,7 +737,10 @@ function Page_user({ currentUser }) {
               <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
                 <h5 className="card-title mb-0">Histórico de Pagamentos</h5>
                 <div className="d-flex align-items-center flex-wrap export-controls gap-2">
-                  <button className="btn btn-sm btn-outline-primary" onClick={handleExportFullStatement}>
+                  <button
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={handleExportFullStatement}
+                  >
                     Extrato Completo
                   </button>
                   <input
@@ -709,7 +785,11 @@ function Page_user({ currentUser }) {
                           <tr key={payment._id || payment.id}>
                             <td>{payment.description}</td>
                             <td>{payment.amount.toFixed(2)}</td>
-                            <td>{new Date(payment.date).toLocaleDateString("pt-BR")}</td>
+                            <td>
+                              {new Date(payment.date).toLocaleDateString(
+                                "pt-BR"
+                              )}
+                            </td>
                             <td>
                               <span className="cashback-value">
                                 {(payment.cashback || 0).toFixed(8)} WBTC
@@ -720,7 +800,9 @@ function Page_user({ currentUser }) {
                               {payment.status === "Concluído" && (
                                 <button
                                   className="btn btn-link p-0 export-btn"
-                                  onClick={() => handleExportTransaction(payment)}
+                                  onClick={() =>
+                                    handleExportTransaction(payment)
+                                  }
                                   title="Exportar em PDF"
                                 >
                                   <FiletypePdf size={16} />
@@ -734,13 +816,24 @@ function Page_user({ currentUser }) {
                   </div>
                   <nav aria-label="Paginação do histórico">
                     <ul className="pagination justify-content-center mt-3">
-                      <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
-                        <button className="page-link" onClick={goToPreviousPage}>
+                      <li
+                        className={`page-item ${
+                          currentPage === 1 ? "disabled" : ""
+                        }`}
+                      >
+                        <button
+                          className="page-link"
+                          onClick={goToPreviousPage}
+                        >
                           <ChevronLeft />
                         </button>
                       </li>
                       {renderPageNumbers()}
-                      <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
+                      <li
+                        className={`page-item ${
+                          currentPage === totalPages ? "disabled" : ""
+                        }`}
+                      >
                         <button className="page-link" onClick={goToNextPage}>
                           <ChevronRight />
                         </button>
@@ -758,7 +851,11 @@ function Page_user({ currentUser }) {
 
       {/* Modal de Pagamento com Pix */}
       {showPixModal && (
-        <div className="modal fade show" style={{ display: "block" }} tabIndex="-1">
+        <div
+          className="modal fade show"
+          style={{ display: "block" }}
+          tabIndex="-1"
+        >
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
@@ -772,12 +869,18 @@ function Page_user({ currentUser }) {
               </div>
               <div className="modal-body">
                 {pixMensagem && (
-                  <div className={`alert alert-${pixMensagem.tipo === "sucesso" ? "success" : "danger"}`}>
+                  <div
+                    className={`alert alert-${
+                      pixMensagem.tipo === "sucesso" ? "success" : "danger"
+                    }`}
+                  >
                     {pixMensagem.texto}
                   </div>
                 )}
                 <div className="mb-3">
-                  <label htmlFor="pixKey" className="form-label">Chave Pix do Destinatário</label>
+                  <label htmlFor="pixKey" className="form-label">
+                    Chave Pix do Destinatário
+                  </label>
                   <input
                     type="text"
                     className="form-control"
@@ -794,14 +897,22 @@ function Page_user({ currentUser }) {
                     <div className="card bg-light">
                       <div className="card-body">
                         <h6 className="card-title">Detalhes do Pagamento</h6>
-                        <p><strong>Destinatário:</strong> {pixDetails.destinatario}</p>
-                        <p><strong>Valor:</strong> R$ {pixDetails.valor || valorPagamento}</p>
+                        <p>
+                          <strong>Destinatário:</strong>{" "}
+                          {pixDetails.destinatario}
+                        </p>
+                        <p>
+                          <strong>Valor:</strong> R${" "}
+                          {pixDetails.valor || valorPagamento}
+                        </p>
                       </div>
                     </div>
                   </div>
                 )}
                 <div className="mb-3">
-                  <label htmlFor="valorPagamento" className="form-label">Valor do Pagamento (R$)</label>
+                  <label htmlFor="valorPagamento" className="form-label">
+                    Valor do Pagamento (R$)
+                  </label>
                   <input
                     type="number"
                     className="form-control"
@@ -815,7 +926,9 @@ function Page_user({ currentUser }) {
                   />
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="categoriaPagamento" className="form-label">Categoria do Pagamento</label>
+                  <label htmlFor="categoriaPagamento" className="form-label">
+                    Categoria do Pagamento
+                  </label>
                   <select
                     className="form-select"
                     id="categoriaPagamento"
@@ -825,12 +938,16 @@ function Page_user({ currentUser }) {
                   >
                     <option value="">Selecione uma categoria</option>
                     {categoriasPagamento.map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.nome}</option>
+                      <option key={cat.id} value={cat.id}>
+                        {cat.nome}
+                      </option>
                     ))}
                   </select>
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="descricaoPagamento" className="form-label">Descrição</label>
+                  <label htmlFor="descricaoPagamento" className="form-label">
+                    Descrição
+                  </label>
                   <input
                     type="text"
                     className="form-control"
@@ -846,10 +963,23 @@ function Page_user({ currentUser }) {
                     <div className="card bg-light">
                       <div className="card-body">
                         <h6 className="card-title">Resumo do Pagamento</h6>
-                        <p>Valor do pagamento: R$ {parseFloat(valorPagamento).toFixed(2)}</p>
-                        <p>Taxa (3%): R$ {(parseFloat(valorPagamento) * 0.03).toFixed(2)}</p>
-                        <p>Total a pagar: R$ {(parseFloat(valorPagamento) * 1.03).toFixed(2)}</p>
-                        <p>Cashback estimado: {calcularCashback(valorPagamento, wbtcBrlPrice)} WBTC (após aprovação)</p>
+                        <p>
+                          Valor do pagamento: R${" "}
+                          {parseFloat(valorPagamento).toFixed(2)}
+                        </p>
+                        <p>
+                          Taxa (3%): R${" "}
+                          {(parseFloat(valorPagamento) * 0.03).toFixed(2)}
+                        </p>
+                        <p>
+                          Total a pagar: R${" "}
+                          {(parseFloat(valorPagamento) * 1.03).toFixed(2)}
+                        </p>
+                        <p>
+                          Cashback estimado:{" "}
+                          {calcularCashback(valorPagamento, wbtcBrlPrice)} WBTC
+                          (após aprovação)
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -878,7 +1008,11 @@ function Page_user({ currentUser }) {
                 >
                   {pixLoading ? (
                     <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      ></span>
                       Processando...
                     </>
                   ) : (
@@ -934,21 +1068,32 @@ function Page_user({ currentUser }) {
             </div>
             <div className="modal-body">
               {depositoMensagem && (
-                <div className={`alert alert-${depositoMensagem.tipo === "sucesso" ? "success" : "danger"}`}>
+                <div
+                  className={`alert alert-${
+                    depositoMensagem.tipo === "sucesso" ? "success" : "danger"
+                  }`}
+                >
                   {depositoMensagem.texto}
                 </div>
               )}
               <div className="alert alert-info mb-3">
                 <h6 className="alert-heading">Informações para depósito PIX</h6>
-                <p className="mb-1"><strong>Chave PIX (CPF):</strong> 01558516247</p>
-                <p className="mb-1"><strong>Favorecido:</strong> Josias Silva Monteiro</p>
+                <p className="mb-1">
+                  <strong>Chave PIX (CPF):</strong> 01558516247
+                </p>
+                <p className="mb-1">
+                  <strong>Favorecido:</strong> Josias Silva Monteiro
+                </p>
                 <hr />
                 <small>
-                  Faça o depósito PIX usando os dados acima e envie o comprovante para confirmar seu depósito.
+                  Faça o depósito PIX usando os dados acima e envie o
+                  comprovante para confirmar seu depósito.
                 </small>
               </div>
               <div className="mb-3">
-                <label htmlFor="valorDeposito" className="form-label">Valor do Depósito (R$)</label>
+                <label htmlFor="valorDeposito" className="form-label">
+                  Valor do Depósito (R$)
+                </label>
                 <input
                   type="number"
                   className="form-control"
@@ -962,7 +1107,9 @@ function Page_user({ currentUser }) {
                 />
               </div>
               <div className="mb-3">
-                <label htmlFor="metodoDeposito" className="form-label">Método de Pagamento</label>
+                <label htmlFor="metodoDeposito" className="form-label">
+                  Método de Pagamento
+                </label>
                 <select
                   className="form-select"
                   id="metodoDeposito"
@@ -977,13 +1124,18 @@ function Page_user({ currentUser }) {
                       value={metodo.id}
                       disabled={!metodo.disponivel}
                     >
-                      {metodo.nome} {metodo.taxa > 0 && metodo.id !== "pix" ? `(Taxa: ${metodo.taxa}%)` : "(Sem taxa)"}
+                      {metodo.nome}{" "}
+                      {metodo.taxa > 0 && metodo.id !== "pix"
+                        ? `(Taxa: ${metodo.taxa}%)`
+                        : "(Sem taxa)"}
                     </option>
                   ))}
                 </select>
               </div>
               <div className="mb-3">
-                <label htmlFor="comprovante" className="form-label">Comprovante (Obrigatório)</label>
+                <label htmlFor="comprovante" className="form-label">
+                  Comprovante (Obrigatório)
+                </label>
                 <input
                   type="file"
                   className="form-control"
@@ -994,7 +1146,8 @@ function Page_user({ currentUser }) {
                   required
                 />
                 <small className="text-muted">
-                  Para confirmar seu depósito, precisamos do comprovante da transação.
+                  Para confirmar seu depósito, precisamos do comprovante da
+                  transação.
                 </small>
               </div>
               {valorDeposito && metodoDeposito && (
@@ -1002,10 +1155,16 @@ function Page_user({ currentUser }) {
                   <div className="card bg-light">
                     <div className="card-body">
                       <h6 className="card-title">Resumo do Depósito</h6>
-                      <p>Valor do depósito: R$ {parseFloat(valorDeposito).toFixed(2)}</p>
-                      {taxaDeposito > 0 && <p>Taxa: R$ {taxaDeposito.toFixed(2)}</p>}
+                      <p>
+                        Valor do depósito: R${" "}
+                        {parseFloat(valorDeposito).toFixed(2)}
+                      </p>
+                      {taxaDeposito > 0 && (
+                        <p>Taxa: R$ {taxaDeposito.toFixed(2)}</p>
+                      )}
                       <p className="fw-bold">
-                        Total a pagar: R$ {(parseFloat(valorDeposito) + taxaDeposito).toFixed(2)}
+                        Total a pagar: R${" "}
+                        {(parseFloat(valorDeposito) + taxaDeposito).toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -1035,7 +1194,11 @@ function Page_user({ currentUser }) {
               >
                 {depositoLoading ? (
                   <>
-                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
                     Processando...
                   </>
                 ) : (
@@ -1049,7 +1212,11 @@ function Page_user({ currentUser }) {
 
       {/* Modal de Venda */}
       {showSellModal && (
-        <div className="modal fade show" style={{ display: "block" }} tabIndex="-1">
+        <div
+          className="modal fade show"
+          style={{ display: "block" }}
+          tabIndex="-1"
+        >
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
@@ -1063,12 +1230,18 @@ function Page_user({ currentUser }) {
               </div>
               <div className="modal-body">
                 {sellMensagem && (
-                  <div className={`alert alert-${sellMensagem.tipo === "sucesso" ? "success" : "danger"}`}>
+                  <div
+                    className={`alert alert-${
+                      sellMensagem.tipo === "sucesso" ? "success" : "danger"
+                    }`}
+                  >
                     {sellMensagem.texto}
                   </div>
                 )}
                 <div className="mb-3">
-                  <label htmlFor="valorVenda" className="form-label">Quantidade de WBTC a Vender</label>
+                  <label htmlFor="valorVenda" className="form-label">
+                    Quantidade de WBTC a Vender
+                  </label>
                   <input
                     type="number"
                     className="form-control"
@@ -1082,21 +1255,31 @@ function Page_user({ currentUser }) {
                     autoFocus
                   />
                   <small className="text-muted">
-                    Saldo disponível: {(userData.wbtcBalance || 0).toFixed(8)} WBTC
+                    Saldo disponível: {(userData.wbtcBalance || 0).toFixed(8)}{" "}
+                    WBTC
                   </small>
                 </div>
-                {valorVenda && !isNaN(parseFloat(valorVenda)) && wbtcBrlPrice && (
-                  <div className="mb-3">
-                    <div className="card bg-light">
-                      <div className="card-body">
-                        <h6 className="card-title">Resumo da Venda</h6>
-                        <p className="mb-1">Quantidade: {parseFloat(valorVenda).toFixed(8)} WBTC</p>
-                        <p className="mb-1">Valor a receber: R$ {(parseFloat(valorVenda) * wbtcBrlPrice).toFixed(2)}</p>
-                        <p className="mt-2 text-success"><small>+ 1 ponto será adicionado à sua conta</small></p>
+                {valorVenda &&
+                  !isNaN(parseFloat(valorVenda)) &&
+                  wbtcBrlPrice && (
+                    <div className="mb-3">
+                      <div className="card bg-light">
+                        <div className="card-body">
+                          <h6 className="card-title">Resumo da Venda</h6>
+                          <p className="mb-1">
+                            Quantidade: {parseFloat(valorVenda).toFixed(8)} WBTC
+                          </p>
+                          <p className="mb-1">
+                            Valor a receber: R${" "}
+                            {(parseFloat(valorVenda) * wbtcBrlPrice).toFixed(2)}
+                          </p>
+                          <p className="mt-2 text-success">
+                            <small>+ 1 ponto será adicionado à sua conta</small>
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
               <div className="modal-footer">
                 <button
@@ -1121,7 +1304,11 @@ function Page_user({ currentUser }) {
                 >
                   {sellLoading ? (
                     <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      ></span>
                       Processando...
                     </>
                   ) : (
