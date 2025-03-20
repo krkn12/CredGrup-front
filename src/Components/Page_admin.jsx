@@ -9,17 +9,20 @@ function Page_admin({ currentUser }) {
   const [deposits, setDeposits] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [loans, setLoans] = useState([]); // Novo estado para empréstimos
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("users");
   const [searchTerm, setSearchTerm] = useState("");
   const [showRejectedDeposits, setShowRejectedDeposits] = useState(false);
   const [showRejectedPayments, setShowRejectedPayments] = useState(false);
+  const [showRejectedLoans, setShowRejectedLoans] = useState(false); // Novo filtro para empréstimos
 
   // Estados para paginação
   const [usersPage, setUsersPage] = useState(1);
   const [depositsPage, setDepositsPage] = useState(1);
   const [paymentsPage, setPaymentsPage] = useState(1);
   const [transactionsPage, setTransactionsPage] = useState(1);
+  const [loansPage, setLoansPage] = useState(1); // Novo estado para paginação de empréstimos
   const itemsPerPage = 12;
 
   useEffect(() => {
@@ -30,18 +33,20 @@ function Page_admin({ currentUser }) {
 
     const fetchAdminData = async () => {
       try {
-        const [usersRes, depositsRes, paymentsRes, transactionsRes] = await Promise.all([
+        const [usersRes, depositsRes, paymentsRes, transactionsRes, loansRes] = await Promise.all([
           api.get("/admin/users"),
           api.get("/admin/deposits"),
           api.get("/admin/payments"),
           api.get("/admin/transactions"),
+          api.get("/admin/loans"), // Nova requisição para empréstimos
         ]);
 
         // Ordenar do mais novo para o mais antigo
-        setUsers(usersRes.data.sort((a, b) => b._id.localeCompare(a._id))); // Usando _id como proxy para data
+        setUsers(usersRes.data.sort((a, b) => b._id.localeCompare(a._id)));
         setDeposits(depositsRes.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
         setPayments(paymentsRes.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
         setTransactions(transactionsRes.data.sort((a, b) => new Date(b.date) - new Date(a.date)));
+        setLoans(loansRes.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))); // Ordenar empréstimos
       } catch (error) {
         console.error("Erro ao carregar dados administrativos:", error);
       } finally {
@@ -52,7 +57,7 @@ function Page_admin({ currentUser }) {
     fetchAdminData();
   }, [currentUser, navigate]);
 
-  // Funções de manipulação de dados
+  // Funções de manipulação de dados (mantidas como estão, exceto onde necessário)
   const handleUpdateUser = async (userId, updatedData) => {
     try {
       const response = await api.put(`/admin/users/${userId}`, updatedData);
@@ -81,7 +86,7 @@ function Page_admin({ currentUser }) {
       setDeposits(deposits.map((d) => (d._id === depositId ? response.data : d)));
       alert(`Depósito atualizado com sucesso para "${status}"!`);
       if (status === "Concluído") {
-        const usersRes = await api.get("/api/admin/users");
+        const usersRes = await api.get("/admin/users");
         setUsers(usersRes.data.sort((a, b) => b._id.localeCompare(a._id)));
       }
     } catch (error) {
@@ -135,6 +140,18 @@ function Page_admin({ currentUser }) {
       } catch (error) {
         alert("Erro ao deletar transação.");
       }
+    }
+  };
+
+  // Nova função para atualizar status de empréstimo (se necessário)
+  const handleUpdateLoan = async (loanId, status) => {
+    try {
+      const response = await api.put(`/admin/loans/${loanId}`, { status });
+      setLoans(loans.map((l) => (l._id === loanId ? response.data : l)));
+      alert(`Empréstimo atualizado com sucesso para "${status}"!`);
+    } catch (error) {
+      console.error("Erro ao atualizar empréstimo:", error);
+      alert(`Erro ao atualizar empréstimo: ${error.response?.data?.error || error.message}`);
     }
   };
 
@@ -208,6 +225,10 @@ function Page_admin({ currentUser }) {
     showRejectedPayments || payment.status !== "Rejeitado"
   );
 
+  const filteredLoans = loans.filter((loan) =>
+    showRejectedLoans || loan.status !== "repaid" // Filtra empréstimos pagos se o toggle estiver desativado
+  );
+
   if (loading) return <div className="container text-center"><h3>Carregando...</h3></div>;
 
   return (
@@ -245,6 +266,14 @@ function Page_admin({ currentUser }) {
             onClick={() => setActiveTab("transactions")}
           >
             Transações
+          </button>
+        </li>
+        <li className="nav-item">
+          <button
+            className={`nav-link ${activeTab === "loans" ? "active" : ""}`}
+            onClick={() => setActiveTab("loans")}
+          >
+            Empréstimos
           </button>
         </li>
       </ul>
@@ -582,6 +611,84 @@ function Page_admin({ currentUser }) {
               </table>
             </div>
             {transactions.length > itemsPerPage && renderPagination(transactions.length, transactionsPage, setTransactionsPage)}
+          </div>
+        </div>
+      )}
+
+      {activeTab === "loans" && (
+        <div className="card">
+          <div className="card-body">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="card-title mb-0">Empréstimos</h5>
+              <div className="form-check form-switch">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="showRejectedLoansToggle"
+                  checked={showRejectedLoans}
+                  onChange={() => setShowRejectedLoans(!showRejectedLoans)}
+                />
+                <label className="form-check-label" htmlFor="showRejectedLoansToggle">
+                  Mostrar Pagos
+                </label>
+              </div>
+            </div>
+            <div className="table-responsive">
+              <table className="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Usuário</th>
+                    <th>Valor (R$)</th>
+                    <th>Total a Pagar (R$)</th>
+                    <th>Data de Vencimento</th>
+                    <th>Status</th>
+                    <th>Data de Criação</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {getPaginatedItems(filteredLoans, loansPage).map((loan) => (
+                    <tr key={loan._id}>
+                      <td>{loan.userId?.name || "Usuário não encontrado"}</td>
+                      <td>{loan.amount.toFixed(2)}</td>
+                      <td>{loan.totalToRepay.toFixed(2)}</td>
+                      <td>{new Date(loan.dueDate).toLocaleDateString("pt-BR")}</td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            loan.status === "active"
+                              ? "bg-warning"
+                              : loan.status === "repaid"
+                              ? "bg-success"
+                              : "bg-danger"
+                          }`}
+                        >
+                          {loan.status === "active" ? "Ativo" : loan.status === "repaid" ? "Pago" : "Vencido"}
+                        </span>
+                      </td>
+                      <td>{new Date(loan.createdAt).toLocaleDateString("pt-BR")}</td>
+                      <td>
+                        {/* Ações podem ser expandidas conforme necessário */}
+                        <button
+                          className="btn btn-sm btn-primary"
+                          onClick={() => alert(`Detalhes do empréstimo:\nID: ${loan._id}\nUsuário: ${loan.userId?.name}\nValor: R$${loan.amount.toFixed(2)}\nTotal a Pagar: R$${loan.totalToRepay.toFixed(2)}`)}
+                        >
+                          Detalhes
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredLoans.length === 0 && (
+                    <tr>
+                      <td colSpan="7" className="text-center">
+                        Nenhum empréstimo encontrado
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {filteredLoans.length > itemsPerPage && renderPagination(filteredLoans.length, loansPage, setLoansPage)}
           </div>
         </div>
       )}
