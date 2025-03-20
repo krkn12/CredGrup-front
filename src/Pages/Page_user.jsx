@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { FiletypePdf, ChevronLeft, ChevronRight } from "react-bootstrap-icons";
 import api from "../services/api";
 import { processarVendaWBTC } from "../Hooks/Venderbitcoin";
-import Investments from "../components/Investments";
+import Investments from "../Hooks/Investments";
 import {
   processarDeposito,
   metodosPagamento,
