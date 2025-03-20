@@ -1,4 +1,5 @@
 import axios from "axios";
+import api from '../services/api';
 
 // Cache para armazenar o último preço obtido com sucesso
 let lastValidPrice = 481826.0; // Valor inicial mais atual (Abril 2024)
@@ -19,7 +20,7 @@ const fetchBitcoinPrice = async () => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-    const response = await fetch('http://158.69.35.122:5000/bitcoin/price', {
+    const response = await fetch('/bitcoin/price', {
       signal: controller.signal,
       headers: {
         'Accept': 'application/json',

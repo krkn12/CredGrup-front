@@ -96,10 +96,10 @@ function Page_user({ currentUser }) {
 
     const fetchInitialData = async () => {
       try {
-        const userResponse = await api.get("/api/users/me");
+        const userResponse = await api.get("/users/me");
         const data = userResponse.data;
 
-        const depositsResponse = await api.get("/api/deposits/me");
+        const depositsResponse = await api.get("/deposits/me");
         const depositHistory = depositsResponse.data.map((deposit) => ({
           _id: deposit._id,
           description: `Depósito via ${deposit.metodoNome}`,
@@ -110,7 +110,7 @@ function Page_user({ currentUser }) {
           tipo: "deposito",
         }));
 
-        const paymentsResponse = await api.get("/api/payments/me");
+        const paymentsResponse = await api.get("/payments/me");
         const paymentHistory = paymentsResponse.data.map((payment) => ({
           id: payment._id,
           description: payment.descricaoPagamento,
@@ -132,7 +132,7 @@ function Page_user({ currentUser }) {
         setTotalPages(Math.ceil((allHistory.length || 1) / itemsPerPage));
 
         // Busca inicial dos dados da carteira
-        const walletResponse = await api.get("/api/wallet/data");
+        const walletResponse = await api.get("/wallet/data");
         setWalletData(walletResponse.data);
         setWalletHistory(fetchWalletHistory(walletResponse.data.wbtcBalance)); // Gera o histórico
         setWalletLoading(false);
@@ -146,10 +146,10 @@ function Page_user({ currentUser }) {
 
     const checkForUpdates = async () => {
       try {
-        const userResponse = await api.get("/api/users/me");
-        const depositsResponse = await api.get("/api/deposits/me");
-        const paymentsResponse = await api.get("/api/payments/me");
-        const walletResponse = await api.get("/api/wallet/data");
+        const userResponse = await api.get("/users/me");
+        const depositsResponse = await api.get("/deposits/me");
+        const paymentsResponse = await api.get("/payments/me");
+        const walletResponse = await api.get("/wallet/data");
 
         const depositHistory = depositsResponse.data.map((deposit) => ({
           _id: deposit._id,
