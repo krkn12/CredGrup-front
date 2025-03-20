@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import api from "../services/api";
 
 function Loans({ currentUser, saldoReais, investmentData, updateUserData }) {
@@ -70,135 +70,183 @@ function Loans({ currentUser, saldoReais, investmentData, updateUserData }) {
     }
   };
 
-  return (
-    <>
-      <button
-        className="btn btn-warning flex-grow-1"
-        onClick={handleLoanRequest}
-      >
-        Solicitar Empréstimo
-      </button>
+  return React.createElement(
+    React.Fragment,
+    null,
+    React.createElement(
+      "button",
+      {
+        className: "btn btn-warning flex-grow-1",
+        onClick: handleLoanRequest,
+      },
+      "Solicitar Empréstimo"
+    ),
 
-      {showLoanModal && (
-        <div
-          className="modal fade show"
-          style={{ display: "block" }}
-          tabIndex="-1"
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Solicitar Empréstimo</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={handleCloseLoanModal}
-                  disabled={loanLoading}
-                ></button>
-              </div>
-              <div className="modal-body">
-                {loanMessage && (
-                  <div
-                    className={`alert alert-${
+    showLoanModal &&
+      React.createElement(
+        "div",
+        {
+          className: "modal fade show",
+          style: { display: "block" },
+          tabIndex: "-1",
+        },
+        React.createElement(
+          "div",
+          { className: "modal-dialog modal-dialog-centered" },
+          React.createElement(
+            "div",
+            { className: "modal-content" },
+            React.createElement(
+              "div",
+              { className: "modal-header" },
+              React.createElement("h5", { className: "modal-title" }, "Solicitar Empréstimo"),
+              React.createElement("button", {
+                type: "button",
+                className: "btn-close",
+                onClick: handleCloseLoanModal,
+                disabled: loanLoading,
+              })
+            ),
+            React.createElement(
+              "div",
+              { className: "modal-body" },
+              loanMessage &&
+                React.createElement(
+                  "div",
+                  {
+                    className: `alert alert-${
                       loanMessage.tipo === "sucesso" ? "success" : "danger"
-                    }`}
-                  >
-                    {loanMessage.texto}
-                  </div>
-                )}
-                <p>
-                  <strong>Valor máximo disponível:</strong> R${" "}
-                  {(investmentData.amount * 0.85).toFixed(2)} (85% do seu
-                  investimento)
-                </p>
-                <p>
-                  <small>
-                    Juros: 5% ao mês. O pagamento deve ser feito em até 30 dias.
-                  </small>
-                </p>
-                <div className="mb-3">
-                  <label htmlFor="loanAmount" className="form-label">
-                    Valor do Empréstimo (R$)
-                  </label>
-                  <input
-                    type="number"
-                    className="form-control"
-                    id="loanAmount"
-                    placeholder="Digite o valor"
-                    value={loanAmount}
-                    onChange={handleLoanAmountChange}
-                    disabled={loanLoading}
-                    min="1"
-                    step="0.01"
-                    autoFocus
-                  />
-                </div>
-                {loanAmount && !isNaN(parseFloat(loanAmount)) && (
-                  <div className="mb-3">
-                    <div className="card bg-light">
-                      <div className="card-body">
-                        <h6 className="card-title">Resumo do Empréstimo</h6>
-                        <p className="mb-1">
-                          Valor solicitado: R$ {parseFloat(loanAmount).toFixed(2)}
-                        </p>
-                        <p className="mb-1">
-                          Juros (5%): R${" "}
-                          {(parseFloat(loanAmount) * 0.05).toFixed(2)}
-                        </p>
-                        <p className="fw-bold">
-                          Total a pagar em 1 mês: R${" "}
-                          {(parseFloat(loanAmount) * 1.05).toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={handleCloseLoanModal}
-                  disabled={loanLoading}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-warning"
-                  onClick={handleProcessarEmprestimo}
-                  disabled={
+                    }`,
+                  },
+                  loanMessage.texto
+                ),
+              React.createElement(
+                "p",
+                null,
+                React.createElement("strong", null, "Valor máximo disponível:"),
+                " R$ ",
+                (investmentData.amount * 0.85).toFixed(2),
+                " (85% do seu investimento)"
+              ),
+              React.createElement(
+                "p",
+                null,
+                React.createElement(
+                  "small",
+                  null,
+                  "Juros: 5% ao mês. O pagamento deve ser feito em até 30 dias."
+                )
+              ),
+              React.createElement(
+                "div",
+                { className: "mb-3" },
+                React.createElement(
+                  "label",
+                  { htmlFor: "loanAmount", className: "form-label" },
+                  "Valor do Empréstimo (R$)"
+                ),
+                React.createElement("input", {
+                  type: "number",
+                  className: "form-control",
+                  id: "loanAmount",
+                  placeholder: "Digite o valor",
+                  value: loanAmount,
+                  onChange: handleLoanAmountChange,
+                  disabled: loanLoading,
+                  min: "1",
+                  step: "0.01",
+                  autoFocus: true,
+                })
+              ),
+              loanAmount &&
+                !isNaN(parseFloat(loanAmount)) &&
+                React.createElement(
+                  "div",
+                  { className: "mb-3" },
+                  React.createElement(
+                    "div",
+                    { className: "card bg-light" },
+                    React.createElement(
+                      "div",
+                      { className: "card-body" },
+                      React.createElement(
+                        "h6",
+                        { className: "card-title" },
+                        "Resumo do Empréstimo"
+                      ),
+                      React.createElement(
+                        "p",
+                        { className: "mb-1" },
+                        "Valor solicitado: R$ ",
+                        parseFloat(loanAmount).toFixed(2)
+                      ),
+                      React.createElement(
+                        "p",
+                        { className: "mb-1" },
+                        "Juros (5%): R$ ",
+                        (parseFloat(loanAmount) * 0.05).toFixed(2)
+                      ),
+                      React.createElement(
+                        "p",
+                        { className: "fw-bold" },
+                        "Total a pagar em 1 mês: R$ ",
+                        (parseFloat(loanAmount) * 1.05).toFixed(2)
+                      )
+                    )
+                  )
+                )
+            ),
+            React.createElement(
+              "div",
+              { className: "modal-footer" },
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  className: "btn btn-secondary",
+                  onClick: handleCloseLoanModal,
+                  disabled: loanLoading,
+                },
+                "Cancelar"
+              ),
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  className: "btn btn-warning",
+                  onClick: handleProcessarEmprestimo,
+                  disabled:
                     loanLoading ||
                     !loanAmount ||
                     isNaN(parseFloat(loanAmount)) ||
                     parseFloat(loanAmount) <= 0 ||
-                    parseFloat(loanAmount) > investmentData.amount * 0.85
-                  }
-                >
-                  {loanLoading ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        role="status"
-                        aria-hidden="true"
-                      ></span>
-                      Processando...
-                    </>
-                  ) : (
-                    "Solicitar Empréstimo"
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-          <div
-            className="modal-backdrop fade show"
-            onClick={!loanLoading ? handleCloseLoanModal : null}
-            style={{ zIndex: -1 }}
-          ></div>
-        </div>
-      )}
-    </>
+                    parseFloat(loanAmount) > investmentData.amount * 0.85,
+                },
+                loanLoading
+                  ? React.createElement(
+                      React.Fragment,
+                      null,
+                      React.createElement(
+                        "span",
+                        {
+                          className: "spinner-border spinner-border-sm me-2",
+                          role: "status",
+                          "aria-hidden": "true",
+                        }
+                      ),
+                      "Processando..."
+                    )
+                  : "Solicitar Empréstimo"
+              )
+            )
+          )
+        ),
+        React.createElement("div", {
+          className: "modal-backdrop fade show",
+          onClick: !loanLoading ? handleCloseLoanModal : null,
+          style: { zIndex: -1 },
+        })
+      )
   );
 }
 
