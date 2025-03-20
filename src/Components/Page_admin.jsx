@@ -33,7 +33,7 @@ function Page_admin({ currentUser }) {
         const [usersRes, depositsRes, paymentsRes, transactionsRes] = await Promise.all([
           api.get("/admin/users"),
           api.get("/admin/deposits"),
-          api.get("/aadmin/payments"),
+          api.get("/admin/payments"),
           api.get("/admin/transactions"),
         ]);
 
