@@ -67,7 +67,7 @@ export const processarDeposito = async (valor, metodoId, comprovante = null) => 
 
 export const listarDepositos = async () => {
   try {
-    const response = await api.get('/api/deposits/me');
+    const response = await api.get('/deposits/me');
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || 'Erro ao listar depósitos');
@@ -76,7 +76,7 @@ export const listarDepositos = async () => {
 
 export const verificarAtualizacoesDepositos = async (ultimaVerificacao) => {
   try {
-    const response = await api.get('/api/deposits/me/updates', {
+    const response = await api.get('/deposits/me/updates', {
       params: { desde: ultimaVerificacao }
     });
     return {

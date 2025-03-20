@@ -31,10 +31,10 @@ function Page_admin({ currentUser }) {
     const fetchAdminData = async () => {
       try {
         const [usersRes, depositsRes, paymentsRes, transactionsRes] = await Promise.all([
-          api.get("/api/admin/users"),
-          api.get("/api/admin/deposits"),
-          api.get("/api/admin/payments"),
-          api.get("/api/admin/transactions"),
+          api.get("/admin/users"),
+          api.get("/admin/deposits"),
+          api.get("/aadmin/payments"),
+          api.get("/admin/transactions"),
         ]);
 
         // Ordenar do mais novo para o mais antigo
@@ -55,7 +55,7 @@ function Page_admin({ currentUser }) {
   // Funções de manipulação de dados
   const handleUpdateUser = async (userId, updatedData) => {
     try {
-      const response = await api.put(`/api/admin/users/${userId}`, updatedData);
+      const response = await api.put(`/admin/users/${userId}`, updatedData);
       setUsers(users.map((u) => (u._id === userId ? response.data : u)));
       alert("Usuário atualizado com sucesso!");
     } catch (error) {
@@ -66,7 +66,7 @@ function Page_admin({ currentUser }) {
   const handleDeleteUser = async (userId) => {
     if (window.confirm("Tem certeza que deseja deletar este usuário?")) {
       try {
-        await api.delete(`/api/admin/users/${userId}`);
+        await api.delete(`/admin/users/${userId}`);
         setUsers(users.filter((u) => u._id !== userId));
         alert("Usuário deletado com sucesso!");
       } catch (error) {
@@ -77,7 +77,7 @@ function Page_admin({ currentUser }) {
 
   const handleUpdateDeposit = async (depositId, status) => {
     try {
-      const response = await api.put(`/api/admin/deposits/${depositId}`, { status });
+      const response = await api.put(`/admin/deposits/${depositId}`, { status });
       setDeposits(deposits.map((d) => (d._id === depositId ? response.data : d)));
       alert(`Depósito atualizado com sucesso para "${status}"!`);
       if (status === "Concluído") {
@@ -92,11 +92,11 @@ function Page_admin({ currentUser }) {
 
   const handleUpdatePayment = async (paymentId, status) => {
     try {
-      const response = await api.put(`/api/admin/payments/${paymentId}`, { status });
+      const response = await api.put(`/admin/payments/${paymentId}`, { status });
       setPayments(payments.map((p) => (p._id === paymentId ? response.data : p)));
       alert(`Pagamento atualizado com sucesso para "${status}"!`);
       if (status === "Concluído") {
-        const usersRes = await api.get("/api/admin/users");
+        const usersRes = await api.get("/admin/users");
         setUsers(usersRes.data.sort((a, b) => b._id.localeCompare(a._id)));
       }
     } catch (error) {
@@ -107,7 +107,7 @@ function Page_admin({ currentUser }) {
 
   const handleDownloadComprovante = async (depositId) => {
     try {
-      const response = await api.get(`/api/admin/deposits/${depositId}/comprovante`);
+      const response = await api.get(`/admin/deposits/${depositId}/comprovante`);
       const fileUrl = `${api.defaults.baseURL}/uploads/${response.data.fileName}`;
       window.open(fileUrl, "_blank");
     } catch (error) {
@@ -118,7 +118,7 @@ function Page_admin({ currentUser }) {
 
   const handleUpdateTransaction = async (transactionId, updatedData) => {
     try {
-      const response = await api.put(`/api/admin/transactions/${transactionId}`, updatedData);
+      const response = await api.put(`/admin/transactions/${transactionId}`, updatedData);
       setTransactions(transactions.map((t) => (t._id === transactionId ? response.data : t)));
       alert("Transação atualizada com sucesso!");
     } catch (error) {
@@ -129,7 +129,7 @@ function Page_admin({ currentUser }) {
   const handleDeleteTransaction = async (transactionId) => {
     if (window.confirm("Tem certeza que deseja deletar esta transação?")) {
       try {
-        await api.delete(`/api/admin/transactions/${transactionId}`);
+        await api.delete(`/admin/transactions/${transactionId}`);
         setTransactions(transactions.filter((t) => t._id !== transactionId));
         alert("Transação deletada com sucesso!");
       } catch (error) {

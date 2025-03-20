@@ -19,7 +19,7 @@ const fetchBitcoinPrice = async () => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-    const response = await fetch('http://158.69.35.122:5000/api/bitcoin/price', {
+    const response = await fetch('http://158.69.35.122:5000/bitcoin/price', {
       signal: controller.signal,
       headers: {
         'Accept': 'application/json',

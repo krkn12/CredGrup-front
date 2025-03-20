@@ -54,7 +54,7 @@ function Register({ onRegisterSuccess }) {
 
     setIsLoading(true);
     try {
-      const response = await api.post('/api/users/register', {
+      const response = await api.post('/users/register', {
         name: formData.name,
         email: formData.email,
         password: formData.password,

@@ -128,7 +128,7 @@ export const processarPagamento = async (
     const valor = parseFloat(valorPagamento);
     const taxa = calcularTaxaPagamento(valor);
     
-    const response = await api.post('/api/payments/pix', {
+    const response = await api.post('/payments/pix', {
       valorPagamento: valor,
       descricaoPagamento,
       categoriaPagamento,
@@ -211,7 +211,7 @@ export const gerenciarPagamento = async (
 
 export const listarPagamentos = async () => {
   try {
-    const response = await api.get('/api/payments/me');
+    const response = await api.get('/payments/me');
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || 'Erro ao listar pagamentos');

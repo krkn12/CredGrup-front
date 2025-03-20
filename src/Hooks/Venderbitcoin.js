@@ -13,7 +13,7 @@ export const processarVendaWBTC = async (wbtcAmount, callbackObj) => {
     }
     
     // Envia requisição para o backend
-    const response = await api.post("/api/user/sell-wbtc", {
+    const response = await api.post("/user/sell-wbtc", {
       wbtcAmount: parseFloat(wbtcAmount)
     });
     
