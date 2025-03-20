@@ -15,7 +15,7 @@ const Investments = ({ currentUser, saldoReais, updateUserData }) => {
   useEffect(() => {
     const fetchInvestment = async () => {
       try {
-        const response = await api.get('/api/investments/me');
+        const response = await api.get('/investments/me');
         setInvestmentData(response.data);
       } catch (error) {
         console.error('Erro ao buscar investimento:', error);
@@ -32,7 +32,7 @@ const Investments = ({ currentUser, saldoReais, updateUserData }) => {
       if (!amount || amount <= 0) throw new Error('Valor inválido');
       if (amount > saldoReais) throw new Error('Saldo insuficiente');
 
-      const response = await api.post('/api/investments', { amount });
+      const response = await api.post('/investments', { amount });
       setInvestmentData({
         amount: response.data.investment.amount,
         initialDate: response.data.investment.initialDate,
@@ -54,7 +54,7 @@ const Investments = ({ currentUser, saldoReais, updateUserData }) => {
     setLoading(true);
     setMessage(null);
     try {
-      const response = await api.post('/api/investments/withdraw');
+      const response = await api.post('/investments/withdraw');
       setInvestmentData({ amount: 0, initialDate: null, canWithdraw: false, profit: 0 });
       updateUserData({ saldoReais: response.data.saldoReais });
       setMessage({ type: 'success', text: `Resgate de R$ ${response.data.amountWithdrawn.toFixed(2)} concluído!` });
