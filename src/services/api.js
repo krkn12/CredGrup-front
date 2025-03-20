@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://158.69.35.122:5000'
+  baseURL: '/api' // Usa o proxy do Vercel
 });
 
 api.interceptors.request.use(config => {
