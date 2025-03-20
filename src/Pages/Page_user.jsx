@@ -5,6 +5,7 @@ import { FiletypePdf, ChevronLeft, ChevronRight } from "react-bootstrap-icons";
 import api from "../services/api";
 import { processarVendaWBTC } from "../Hooks/Venderbitcoin";
 import Investments from "../Hooks/Investments";
+import Loans from "../Hooks/Loans"; // Já está importado
 import {
   processarDeposito,
   metodosPagamento,
@@ -35,7 +36,7 @@ import useStatementExport from "../Hooks/useStatementExport";
 
 function Page_user({ currentUser }) {
   const navigate = useNavigate();
-  const walletAddress = "0x1c580b494ea23661feec1738bfd8e38adc264775"; // Endereço da carteira
+  const walletAddress = "0x1c580b494ea23661feec1738bfd8e38adc264775";
 
   // Estados
   const [userData, setUserData] = useState(null);
@@ -71,16 +72,21 @@ function Page_user({ currentUser }) {
     wbtcBalance: 0,
     lastUpdated: null,
   });
-  const [walletHistory, setWalletHistory] = useState([]); // Novo estado para o histórico
+  const [walletHistory, setWalletHistory] = useState([]);
   const [walletLoading, setWalletLoading] = useState(true);
   const { exportFullStatement, exportCustomStatement, exportTransaction } =
     useStatementExport();
 
-  // Função para gerar um histórico simplificado baseado no saldo atual
+  // Função para atualizar userData
+  const updateUserData = (newData) => {
+    setUserData((prev) => ({ ...prev, ...newData }));
+  };
+
+  // Função para gerar histórico simplificado da carteira
   const fetchWalletHistory = (wbtcBalance) => {
     const dataPoints = [];
     const today = new Date();
-    const initialBalance = wbtcBalance * 0.2; // Suposição: saldo inicial era 20% do atual
+    const initialBalance = wbtcBalance * 0.2;
     for (let i = 24; i >= 0; i--) {
       const date = new Date(today);
       date.setMonth(today.getMonth() - i);
@@ -128,19 +134,35 @@ function Page_user({ currentUser }) {
           taxa: payment.taxa,
         }));
 
-        const allHistory = [...depositHistory, ...paymentHistory];
+        // Adicionar histórico de empréstimos
+        const loansResponse = await api.get("/loans/me");
+        const loanHistory = loansResponse.data.map((loan) => ({
+          _id: loan._id,
+          description: `Empréstimo de R$ ${loan.amount.toFixed(2)}`,
+          amount: loan.totalToRepay,
+          date: new Date(loan.createdAt),
+          cashback: 0,
+          status: loan.status === "active" ? "Ativo" : loan.status === "repaid" ? "Pago" : "Vencido",
+          tipo: "emprestimo",
+        }));
+
+        const allHistory = [...depositHistory, ...paymentHistory, ...loanHistory];
         allHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        // Buscar dados de investimento
+        const investmentResponse = await api.get("/investments/me");
+        const investmentData = investmentResponse.data;
 
         setUserData({
           ...data,
           paymentHistory: allHistory,
+          investmentData,
         });
         setTotalPages(Math.ceil((allHistory.length || 1) / itemsPerPage));
 
-        // Busca inicial dos dados da carteira
         const walletResponse = await api.get("/wallet/data");
         setWalletData(walletResponse.data);
-        setWalletHistory(fetchWalletHistory(walletResponse.data.wbtcBalance)); // Gera o histórico
+        setWalletHistory(fetchWalletHistory(walletResponse.data.wbtcBalance));
         setWalletLoading(false);
       } catch (error) {
         console.error("Erro ao carregar dados iniciais:", error);
@@ -155,6 +177,7 @@ function Page_user({ currentUser }) {
         const userResponse = await api.get("/users/me");
         const depositsResponse = await api.get("/deposits/me");
         const paymentsResponse = await api.get("/payments/me");
+        const loansResponse = await api.get("/loans/me");
         const walletResponse = await api.get("/wallet/data");
 
         const depositHistory = depositsResponse.data.map((deposit) => ({
@@ -178,16 +201,30 @@ function Page_user({ currentUser }) {
           taxa: payment.taxa,
         }));
 
-        const allHistory = [...depositHistory, ...paymentHistory];
+        const loanHistory = loansResponse.data.map((loan) => ({
+          _id: loan._id,
+          description: `Empréstimo de R$ ${loan.amount.toFixed(2)}`,
+          amount: loan.totalToRepay,
+          date: new Date(loan.createdAt),
+          cashback: 0,
+          status: loan.status === "active" ? "Ativo" : loan.status === "repaid" ? "Pago" : "Vencido",
+          tipo: "emprestimo",
+        }));
+
+        const allHistory = [...depositHistory, ...paymentHistory, ...loanHistory];
         allHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        const investmentResponse = await api.get("/investments/me");
+        const investmentData = investmentResponse.data;
 
         setUserData({
           ...userResponse.data,
           paymentHistory: allHistory,
+          investmentData,
         });
         setTotalPages(Math.ceil((allHistory.length || 1) / itemsPerPage));
         setWalletData(walletResponse.data);
-        setWalletHistory(fetchWalletHistory(walletResponse.data.wbtcBalance)); // Atualiza o histórico
+        setWalletHistory(fetchWalletHistory(walletResponse.data.wbtcBalance));
         setLastCheck(new Date().toISOString());
       } catch (error) {
         console.error("Erro ao verificar atualizações:", error);
@@ -196,7 +233,7 @@ function Page_user({ currentUser }) {
 
     if (currentUser) {
       fetchInitialData();
-      const updateIntervalId = setInterval(checkForUpdates, 30000); // Atualiza a cada 30 segundos
+      const updateIntervalId = setInterval(checkForUpdates, 30000);
       return () => {
         clearInterval(updateIntervalId);
         stopPriceUpdates(intervalId);
@@ -206,6 +243,7 @@ function Page_user({ currentUser }) {
     }
   }, [currentUser, navigate, itemsPerPage]);
 
+  // Funções de manipulação de modais e ações (mantidas como no original)
   const handlePayBill = () => {
     setPixKey("");
     setValorPagamento("");
@@ -548,9 +586,6 @@ function Page_user({ currentUser }) {
       </div>
     );
   }
-  const updateUserData = (newData) => {
-    setUserData((prev) => ({ ...prev, ...newData }));
-  };
 
   return (
     <div className="container">
@@ -633,7 +668,7 @@ function Page_user({ currentUser }) {
           <div className="card">
             <div className="card-body">
               <h5 className="card-title">Ações Rápidas</h5>
-              <div className="d-flex gap-2">
+              <div className="d-flex gap-2 flex-wrap">
                 <button
                   className="btn btn-warning flex-grow-1"
                   onClick={handlePayBill}
@@ -646,6 +681,12 @@ function Page_user({ currentUser }) {
                 >
                   Depositar
                 </button>
+                <Loans
+                  currentUser={currentUser}
+                  saldoReais={userData.saldoReais}
+                  investmentData={userData.investmentData}
+                  updateUserData={updateUserData}
+                />
               </div>
             </div>
           </div>
@@ -721,6 +762,7 @@ function Page_user({ currentUser }) {
           </div>
         </div>
       </div>
+
       <div className="row">
         <div className="col-12">
           <Investments
@@ -730,12 +772,13 @@ function Page_user({ currentUser }) {
           />
         </div>
       </div>
+
       <div className="row">
         <div className="col-12">
           <div className="card">
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
-                <h5 className="card-title mb-0">Histórico de Pagamentos</h5>
+                <h5 className="card-title mb-0">Histórico de Transações</h5>
                 <div className="d-flex align-items-center flex-wrap export-controls gap-2">
                   <button
                     className="btn btn-sm btn-outline-primary"
@@ -781,28 +824,24 @@ function Page_user({ currentUser }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {getCurrentItems().map((payment) => (
-                          <tr key={payment._id || payment.id}>
-                            <td>{payment.description}</td>
-                            <td>{payment.amount.toFixed(2)}</td>
+                        {getCurrentItems().map((item) => (
+                          <tr key={item._id || item.id}>
+                            <td>{item.description}</td>
+                            <td>{item.amount.toFixed(2)}</td>
                             <td>
-                              {new Date(payment.date).toLocaleDateString(
-                                "pt-BR"
-                              )}
+                              {new Date(item.date).toLocaleDateString("pt-BR")}
                             </td>
                             <td>
                               <span className="cashback-value">
-                                {(payment.cashback || 0).toFixed(8)} WBTC
+                                {(item.cashback || 0).toFixed(8)} WBTC
                               </span>
                             </td>
-                            <td>{payment.status}</td>
+                            <td>{item.status}</td>
                             <td>
-                              {payment.status === "Concluído" && (
+                              {(item.status === "Concluído" || item.status === "Pago") && (
                                 <button
                                   className="btn btn-link p-0 export-btn"
-                                  onClick={() =>
-                                    handleExportTransaction(payment)
-                                  }
+                                  onClick={() => handleExportTransaction(item)}
                                   title="Exportar em PDF"
                                 >
                                   <FiletypePdf size={16} />
@@ -842,7 +881,7 @@ function Page_user({ currentUser }) {
                   </nav>
                 </>
               ) : (
-                <p>Nenhum pagamento realizado ainda.</p>
+                <p>Nenhuma transação realizada ainda.</p>
               )}
             </div>
           </div>
