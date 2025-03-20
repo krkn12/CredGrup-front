@@ -7,47 +7,32 @@ export const analisarChavePix = (payload) => {
         throw new Error("Chave PIX inválida ou vazia");
       }
 
-      // Função auxiliar para parsear os campos EMV
       const parseEMV = (data) => {
         const result = {};
         let index = 0;
 
         while (index < data.length) {
-          // Extrai ID do campo (2 dígitos)
           const id = data.substring(index, index + 2);
           index += 2;
-
-          // Extrai tamanho do campo (2 dígitos)
           const length = parseInt(data.substring(index, index + 2), 10);
           index += 2;
-
-          // Extrai valor do campo
           const value = data.substring(index, index + length);
           index += length;
-
-          // Armazena os campos relevantes
           result[id] = value;
-
-          // Parseia subcampos do campo 26 (transação PIX)
           if (id === "26") {
             const subResult = parseEMV(value);
             result[id] = subResult;
           }
         }
-
         return result;
       };
 
-      // Parseia a chave PIX
       const parsedData = parseEMV(payload);
-
-      // Extrai informações relevantes
       const transactionData = parsedData["26"] || {};
       const chavePix = transactionData["01"] || "Chave não informada";
       const destinatario = parsedData["59"] || "Destinatário Desconhecido";
       const valor = parsedData["54"] ? parseFloat(parsedData["54"]).toFixed(2) : "0.00";
 
-      // Validação básica
       if (!parsedData["00"] || parsedData["00"] !== "01") {
         throw new Error("Formato de chave PIX inválido");
       }
@@ -182,16 +167,15 @@ export const gerenciarPagamento = async (
       { onInicio, onSucesso: null, onErro, onFim: null }
     );
 
-    // Adicionar informações extras ao resultado
     const resultadoCompleto = {
       ...resultado,
       pontoGanho: 1,
       novoPagamento: {
         id: resultado._id,
         description: descricaoPagamento,
-        amount: -valor, // Negativo pois é uma saída
+        amount: -valor,
         date: resultado.createdAt || new Date(),
-        cashback: resultado.cashbackWBTC || 0,
+        cashback: calcularCashback(valor, wbtcBrlPrice), // Calcula estimativa
         tipo: "pagamento",
         pontosGanhos: 1,
         taxa,
@@ -203,7 +187,6 @@ export const gerenciarPagamento = async (
     onFim && onFim();
     return resultadoCompleto;
   } catch (error) {
-    // O erro já é tratado em processarPagamento
     onFim && onFim();
     return null;
   }

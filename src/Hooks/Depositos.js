@@ -47,7 +47,7 @@ export const processarDeposito = async (valor, metodoId, comprovante = null) => 
       formData.append('comprovante', comprovante);
     }
 
-    const response = await api.post('/api/deposits', formData, {
+    const response = await api.post('/deposits', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -76,13 +76,15 @@ export const listarDepositos = async () => {
 
 export const verificarAtualizacoesDepositos = async (ultimaVerificacao) => {
   try {
-    const response = await api.get('/deposits/me/updates', {
-      params: { desde: ultimaVerificacao }
-    });
+    const response = await api.get('/deposits/me'); // Usa a rota existente
+    const depositos = response.data;
+    const depositosAtualizados = depositos.some(deposito => 
+      new Date(deposito.updatedAt) > new Date(ultimaVerificacao)
+    );
     return {
-      depositosAtualizados: response.data.depositosAtualizados,
-      saldoAtualizado: response.data.saldoAtualizado,
-      pontosAtualizados: response.data.pontosAtualizados
+      depositosAtualizados,
+      saldoAtualizado: null, // Calcula no frontend se precisar
+      pontosAtualizados: null
     };
   } catch (error) {
     console.error('Erro ao verificar atualizações:', error);

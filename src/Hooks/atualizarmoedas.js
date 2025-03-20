@@ -1,5 +1,4 @@
-import axios from "axios";
-import api from '../services/api';
+import api from '../services/api'; // Usa o api já configurado
 
 // Cache para armazenar o último preço obtido com sucesso
 let lastValidPrice = 481826.0; // Valor inicial mais atual (Abril 2024)
@@ -17,25 +16,15 @@ const fetchBitcoinPrice = async () => {
   }
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-    const response = await fetch('/bitcoin/price', {
-      signal: controller.signal,
+    const response = await api.get('/bitcoin/price', {
+      timeout: 3000, // 3 segundos de timeout
       headers: {
         'Accept': 'application/json',
         'Cache-Control': 'no-cache'
       }
     });
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`Erro HTTP: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const price = data.price;
+    const price = response.data.price;
 
     if (price === undefined || price === null || isNaN(price)) {
       console.warn("Preço recebido inválido:", price);
@@ -47,7 +36,7 @@ const fetchBitcoinPrice = async () => {
     lastFetchTime = now;
     return price;
   } catch (error) {
-    if (error.name === 'AbortError') {
+    if (error.code === 'ECONNABORTED') {
       console.error("Timeout ao buscar preço do WBTC");
     } else {
       console.error("Erro ao buscar preço do WBTC:", error.message);
@@ -100,18 +89,4 @@ const stopPriceUpdates = (intervalId) => {
   }
 };
 
-// Configuração do Axios para comunicação com o backend
-const api = axios.create({
-  baseURL: 'http://158.69.35.122:5000' // VPS IP
-});
-
-// Interceptor para incluir o token JWT em todas as requisições
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-export { fetchBitcoinPrice, startPriceUpdates, stopPriceUpdates, calculateBrlValue, api };
+export { fetchBitcoinPrice, startPriceUpdates, stopPriceUpdates, calculateBrlValue };

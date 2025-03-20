@@ -332,7 +332,7 @@ function Page_user({ currentUser }) {
       depositData.append("taxa", taxa);
       depositData.append("comprovante", comprovanteArquivo);
 
-      const response = await api.post("/api/deposits", depositData, {
+      const response = await api.post("/deposits", depositData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
