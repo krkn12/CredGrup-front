@@ -10,7 +10,7 @@ function Page_admin({ currentUser }) {
   const [transactions, setTransactions] = useState([]);
   const [payments, setPayments] = useState([]);
   const [loans, setLoans] = useState([]);
-  const [investments, setInvestments] = useState([]); // Novo estado para investimentos
+  const [investments, setInvestments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("users");
   const [searchTerm, setSearchTerm] = useState("");
@@ -24,7 +24,7 @@ function Page_admin({ currentUser }) {
   const [paymentsPage, setPaymentsPage] = useState(1);
   const [transactionsPage, setTransactionsPage] = useState(1);
   const [loansPage, setLoansPage] = useState(1);
-  const [investmentsPage, setInvestmentsPage] = useState(1); // Paginação para investimentos
+  const [investmentsPage, setInvestmentsPage] = useState(1);
   const itemsPerPage = 12;
 
   useEffect(() => {
@@ -41,7 +41,7 @@ function Page_admin({ currentUser }) {
           api.get("/admin/payments"),
           api.get("/admin/transactions"),
           api.get("/admin/loans"),
-          api.get("/admin/investments"), // Busca os investimentos
+          api.get("/admin/investments"),
         ]);
 
         setUsers(usersRes.data.sort((a, b) => b._id.localeCompare(a._id)));
@@ -670,7 +670,9 @@ function Page_admin({ currentUser }) {
                           {loan.status === "active" ? "Ativo" : loan.status === "repaid" ? "Pago" : "Vencido"}
                         </span>
                       </td>
-                      <td>{new Date(loan.createdAt).toLocaleDateString("pt-BR")}</td>
+                      <td>
+                        {loan.createdAt ? new Date(loan.createdAt).toLocaleDateString("pt-BR") : "Data não disponível"}
+                      </td>
                       <td>
                         <button
                           className="btn btn-sm btn-primary"
