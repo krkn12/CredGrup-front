@@ -9,20 +9,22 @@ function Page_admin({ currentUser }) {
   const [deposits, setDeposits] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [payments, setPayments] = useState([]);
-  const [loans, setLoans] = useState([]); // Novo estado para empréstimos
+  const [loans, setLoans] = useState([]);
+  const [investments, setInvestments] = useState([]); // Novo estado para investimentos
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("users");
   const [searchTerm, setSearchTerm] = useState("");
   const [showRejectedDeposits, setShowRejectedDeposits] = useState(false);
   const [showRejectedPayments, setShowRejectedPayments] = useState(false);
-  const [showRejectedLoans, setShowRejectedLoans] = useState(false); // Novo filtro para empréstimos
+  const [showRejectedLoans, setShowRejectedLoans] = useState(false);
 
   // Estados para paginação
   const [usersPage, setUsersPage] = useState(1);
   const [depositsPage, setDepositsPage] = useState(1);
   const [paymentsPage, setPaymentsPage] = useState(1);
   const [transactionsPage, setTransactionsPage] = useState(1);
-  const [loansPage, setLoansPage] = useState(1); // Novo estado para paginação de empréstimos
+  const [loansPage, setLoansPage] = useState(1);
+  const [investmentsPage, setInvestmentsPage] = useState(1); // Paginação para investimentos
   const itemsPerPage = 12;
 
   useEffect(() => {
@@ -33,20 +35,21 @@ function Page_admin({ currentUser }) {
 
     const fetchAdminData = async () => {
       try {
-        const [usersRes, depositsRes, paymentsRes, transactionsRes, loansRes] = await Promise.all([
+        const [usersRes, depositsRes, paymentsRes, transactionsRes, loansRes, investmentsRes] = await Promise.all([
           api.get("/admin/users"),
           api.get("/admin/deposits"),
           api.get("/admin/payments"),
           api.get("/admin/transactions"),
-          api.get("/admin/loans"), // Nova requisição para empréstimos
+          api.get("/admin/loans"),
+          api.get("/admin/investments"), // Busca os investimentos
         ]);
 
-        // Ordenar do mais novo para o mais antigo
         setUsers(usersRes.data.sort((a, b) => b._id.localeCompare(a._id)));
         setDeposits(depositsRes.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
         setPayments(paymentsRes.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
         setTransactions(transactionsRes.data.sort((a, b) => new Date(b.date) - new Date(a.date)));
-        setLoans(loansRes.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))); // Ordenar empréstimos
+        setLoans(loansRes.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+        setInvestments(investmentsRes.data.sort((a, b) => new Date(b.initialDate) - new Date(a.initialDate)));
       } catch (error) {
         console.error("Erro ao carregar dados administrativos:", error);
       } finally {
@@ -57,7 +60,7 @@ function Page_admin({ currentUser }) {
     fetchAdminData();
   }, [currentUser, navigate]);
 
-  // Funções de manipulação de dados (mantidas como estão, exceto onde necessário)
+  // Funções de manipulação de dados
   const handleUpdateUser = async (userId, updatedData) => {
     try {
       const response = await api.put(`/admin/users/${userId}`, updatedData);
@@ -143,7 +146,6 @@ function Page_admin({ currentUser }) {
     }
   };
 
-  // Nova função para atualizar status de empréstimo (se necessário)
   const handleUpdateLoan = async (loanId, status) => {
     try {
       const response = await api.put(`/admin/loans/${loanId}`, { status });
@@ -152,6 +154,21 @@ function Page_admin({ currentUser }) {
     } catch (error) {
       console.error("Erro ao atualizar empréstimo:", error);
       alert(`Erro ao atualizar empréstimo: ${error.response?.data?.error || error.message}`);
+    }
+  };
+
+  const handleReleaseFunds = async (userId) => {
+    if (window.confirm("Tem certeza que deseja liberar os fundos investidos deste usuário?")) {
+      try {
+        const response = await api.put(`/admin/investments/release/${userId}`);
+        setInvestments(investments.map((inv) =>
+          inv.userId._id === userId ? { ...inv, initialDate: response.data.investment.initialDate } : inv
+        ));
+        alert("Fundos liberados com sucesso! O usuário pode resgatar imediatamente.");
+      } catch (error) {
+        console.error("Erro ao liberar fundos:", error);
+        alert("Erro ao liberar fundos: " + (error.response?.data?.error || error.message));
+      }
     }
   };
 
@@ -216,17 +233,14 @@ function Page_admin({ currentUser }) {
     (user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
      user.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
-
   const filteredDeposits = deposits.filter((deposit) =>
     showRejectedDeposits || deposit.status !== "Rejeitado"
   );
-
   const filteredPayments = payments.filter((payment) =>
     showRejectedPayments || payment.status !== "Rejeitado"
   );
-
   const filteredLoans = loans.filter((loan) =>
-    showRejectedLoans || loan.status !== "repaid" // Filtra empréstimos pagos se o toggle estiver desativado
+    showRejectedLoans || loan.status !== "repaid"
   );
 
   if (loading) return <div className="container text-center"><h3>Carregando...</h3></div>;
@@ -237,43 +251,33 @@ function Page_admin({ currentUser }) {
 
       <ul className="nav nav-tabs mb-4">
         <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === "users" ? "active" : ""}`}
-            onClick={() => setActiveTab("users")}
-          >
+          <button className={`nav-link ${activeTab === "users" ? "active" : ""}`} onClick={() => setActiveTab("users")}>
             Usuários
           </button>
         </li>
         <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === "deposits" ? "active" : ""}`}
-            onClick={() => setActiveTab("deposits")}
-          >
+          <button className={`nav-link ${activeTab === "deposits" ? "active" : ""}`} onClick={() => setActiveTab("deposits")}>
             Depósitos
           </button>
         </li>
         <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === "payments" ? "active" : ""}`}
-            onClick={() => setActiveTab("payments")}
-          >
+          <button className={`nav-link ${activeTab === "payments" ? "active" : ""}`} onClick={() => setActiveTab("payments")}>
             Pagamentos
           </button>
         </li>
         <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === "transactions" ? "active" : ""}`}
-            onClick={() => setActiveTab("transactions")}
-          >
+          <button className={`nav-link ${activeTab === "transactions" ? "active" : ""}`} onClick={() => setActiveTab("transactions")}>
             Transações
           </button>
         </li>
         <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === "loans" ? "active" : ""}`}
-            onClick={() => setActiveTab("loans")}
-          >
+          <button className={`nav-link ${activeTab === "loans" ? "active" : ""}`} onClick={() => setActiveTab("loans")}>
             Empréstimos
+          </button>
+        </li>
+        <li className="nav-item">
+          <button className={`nav-link ${activeTab === "investments" ? "active" : ""}`} onClick={() => setActiveTab("investments")}>
+            Investimentos
           </button>
         </li>
       </ul>
@@ -668,7 +672,6 @@ function Page_admin({ currentUser }) {
                       </td>
                       <td>{new Date(loan.createdAt).toLocaleDateString("pt-BR")}</td>
                       <td>
-                        {/* Ações podem ser expandidas conforme necessário */}
                         <button
                           className="btn btn-sm btn-primary"
                           onClick={() => alert(`Detalhes do empréstimo:\nID: ${loan._id}\nUsuário: ${loan.userId?.name}\nValor: R$${loan.amount.toFixed(2)}\nTotal a Pagar: R$${loan.totalToRepay.toFixed(2)}`)}
@@ -689,6 +692,69 @@ function Page_admin({ currentUser }) {
               </table>
             </div>
             {filteredLoans.length > itemsPerPage && renderPagination(filteredLoans.length, loansPage, setLoansPage)}
+          </div>
+        </div>
+      )}
+
+      {activeTab === "investments" && (
+        <div className="card">
+          <div className="card-body">
+            <h5 className="card-title">Investimentos</h5>
+            <div className="table-responsive">
+              <table className="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Usuário</th>
+                    <th>Valor (R$)</th>
+                    <th>Data Inicial</th>
+                    <th>Última Adição</th>
+                    <th>Lucro Estimado (15%)</th>
+                    <th>Pode Resgatar?</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {getPaginatedItems(investments, investmentsPage).map((investment) => {
+                    const oneYearLater = new Date(investment.initialDate);
+                    oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+                    const canWithdraw = new Date() >= oneYearLater;
+                    const profit = investment.amount * 0.15;
+
+                    return (
+                      <tr key={investment._id}>
+                        <td>{investment.userId?.name || "Usuário não encontrado"}</td>
+                        <td>{investment.amount.toFixed(2)}</td>
+                        <td>{new Date(investment.initialDate).toLocaleDateString("pt-BR")}</td>
+                        <td>{new Date(investment.lastAddedDate).toLocaleDateString("pt-BR")}</td>
+                        <td>{profit.toFixed(2)}</td>
+                        <td>
+                          <span className={`badge ${canWithdraw ? "bg-success" : "bg-warning"}`}>
+                            {canWithdraw ? "Sim" : "Não"}
+                          </span>
+                        </td>
+                        <td>
+                          <button
+                            className="btn btn-sm btn-success"
+                            onClick={() => handleReleaseFunds(investment.userId._id)}
+                            disabled={canWithdraw}
+                          >
+                            Liberar Fundos
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {investments.length === 0 && (
+                    <tr>
+                      <td colSpan="7" className="text-center">
+                        Nenhum investimento encontrado
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {investments.length > itemsPerPage && renderPagination(investments.length, investmentsPage, setInvestmentsPage)}
           </div>
         </div>
       )}
