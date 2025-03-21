@@ -45,9 +45,14 @@ function Loans({ currentUser, saldoReais, investmentData, updateUserData }) {
         tipo: "emprestimo",
       };
 
+      // Garantir que paymentHistory seja um array, mesmo que não esteja definido
+      const currentPaymentHistory = Array.isArray(currentUser.paymentHistory)
+        ? currentUser.paymentHistory
+        : [];
+
       updateUserData({
         saldoReais: updatedSaldoReais,
-        paymentHistory: [novoEmprestimo, ...currentUser.paymentHistory],
+        paymentHistory: [novoEmprestimo, ...currentPaymentHistory],
       });
 
       setLoanMessage({
@@ -70,6 +75,7 @@ function Loans({ currentUser, saldoReais, investmentData, updateUserData }) {
     }
   };
 
+  // O restante do código (renderização) permanece o mesmo
   return React.createElement(
     React.Fragment,
     null,

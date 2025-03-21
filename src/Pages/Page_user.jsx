@@ -774,7 +774,7 @@ function Page_user({ currentUser }) {
                 "Depositar"
               ),
               React.createElement(Loans, {
-                currentUser,
+                currentUser: userData,
                 saldoReais: userData.saldoReais,
                 investmentData: userData.investmentData || { amount: 0 },
                 updateUserData,
