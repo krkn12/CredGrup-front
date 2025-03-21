@@ -5,7 +5,7 @@ import { FiletypePdf, ChevronLeft, ChevronRight } from "react-bootstrap-icons";
 import api from "../services/api";
 import { processarVendaWBTC } from "../Hooks/Venderbitcoin";
 import Investments from "../Hooks/Investments";
-import Loans from "../Hooks/loan"; // Já está importado
+import Loans from "../Hooks/loans"; // Já está importado
 import {
   processarDeposito,
   metodosPagamento,
