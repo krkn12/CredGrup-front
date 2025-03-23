@@ -51,7 +51,7 @@ function Register({ onRegisterSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
+  
     setIsLoading(true);
     try {
       const response = await api.post('/users/register', {
@@ -60,17 +60,21 @@ function Register({ onRegisterSuccess }) {
         password: formData.password,
         phone: formData.phone,
       });
-
-      setSuccessMessage('Cadastro realizado com sucesso! Redirecionando para o login...');
-      setFormData({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
-
-      if (onRegisterSuccess) {
-        onRegisterSuccess();
+  
+      if (response.data.message === 'Usuário registrado com sucesso') {
+        setSuccessMessage('Cadastro realizado com sucesso! Redirecionando para o login...');
+        setFormData({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
+  
+        if (onRegisterSuccess) {
+          onRegisterSuccess();
+        }
+  
+        setTimeout(() => {
+          navigate('/auth', { replace: true });
+        }, 2000);
+      } else {
+        throw new Error('Resposta inesperada do servidor');
       }
-
-      setTimeout(() => {
-        navigate('/auth', { replace: true }); // Redireciona para a página de login
-      }, 2000);
     } catch (error) {
       console.error('Erro ao registrar:', error);
       setErrors({
@@ -80,7 +84,6 @@ function Register({ onRegisterSuccess }) {
       setIsLoading(false);
     }
   };
-
   return (
     <form onSubmit={handleSubmit}>
       {successMessage && (
