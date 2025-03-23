@@ -1,15 +1,10 @@
-import axios from 'axios';
+import axios from "axios";
 
 const api = axios.create({
-  baseURL: '/api' // Só /api, sem duplicar
-});
-
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  baseURL: "https://158.69.35.122:5000/api", // Ajuste para o IP e porta da VPS
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 export default api;

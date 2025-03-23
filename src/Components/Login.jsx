@@ -22,8 +22,7 @@ function Login({ onLogin }) {
   const validateForm = () => {
     const newErrors = {};
     if (!formData.email) newErrors.email = "Email é obrigatório";
-    else if (!/\S+@\S+\.\S+/.test(formData.email))
-      newErrors.email = "Email inválido";
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Email inválido";
     if (!formData.password) newErrors.password = "Senha é obrigatória";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -44,17 +43,8 @@ function Login({ onLogin }) {
         password: formData.password,
       });
 
-      const {
-        token,
-        id,
-        name,
-        email,
-        saldoReais,
-        wbtcBalance,
-        pontos,
-        walletAddress,
-        isAdmin,
-      } = response.data;
+      const { token, id, name, email, saldoReais, wbtcBalance, pontos, walletAddress, isAdmin } =
+        response.data;
 
       if (rememberMe) {
         localStorage.setItem("token", token);
@@ -95,6 +85,7 @@ function Login({ onLogin }) {
       setIsLoading(false);
     }
   };
+
   const handleRecoveryEmailChange = (e) => {
     setRecoveryEmail(e.target.value);
   };
@@ -102,10 +93,7 @@ function Login({ onLogin }) {
   const handleRecoverySubmit = async (e) => {
     e.preventDefault();
     if (!recoveryEmail) {
-      setRecoveryMessage({
-        type: "error",
-        text: "Por favor, informe seu email",
-      });
+      setRecoveryMessage({ type: "error", text: "Por favor, informe seu email" });
       return;
     }
     if (!/\S+@\S+\.\S+/.test(recoveryEmail)) {
@@ -137,9 +125,7 @@ function Login({ onLogin }) {
           <h5 className="mb-3">Recuperação de Senha</h5>
           {recoveryMessage && (
             <div
-              className={`alert alert-${
-                recoveryMessage.type === "success" ? "success" : "danger"
-              } mb-3`}
+              className={`alert alert-${recoveryMessage.type === "success" ? "success" : "danger"} mb-3`}
               role="alert"
             >
               {recoveryMessage.text}
@@ -158,19 +144,13 @@ function Login({ onLogin }) {
                 value={recoveryEmail}
                 onChange={handleRecoveryEmailChange}
               />
-              <div className="form-text">
-                Enviaremos instruções para recuperar sua senha.
-              </div>
+              <div className="form-text">Enviaremos instruções para recuperar sua senha.</div>
             </div>
             <div className="d-grid gap-2">
               <button type="submit" className="btn btn-warning">
                 <ArrowClockwise /> Recuperar Senha
               </button>
-              <button
-                type="button"
-                className="btn btn-outline-secondary"
-                onClick={toggleRecoveryForm}
-              >
+              <button type="button" className="btn btn-outline-secondary" onClick={toggleRecoveryForm}>
                 Voltar ao Login
               </button>
             </div>
@@ -200,9 +180,7 @@ function Login({ onLogin }) {
               value={formData.email}
               onChange={handleChange}
             />
-            {errors.email && (
-              <div className="invalid-feedback">{errors.email}</div>
-            )}
+            {errors.email && <div className="invalid-feedback">{errors.email}</div>}
           </div>
           <div className="mb-3">
             <label htmlFor="password" className="form-label">
@@ -216,31 +194,17 @@ function Login({ onLogin }) {
               value={formData.password}
               onChange={handleChange}
             />
-            {errors.password && (
-              <div className="invalid-feedback">{errors.password}</div>
-            )}
+            {errors.password && <div className="invalid-feedback">{errors.password}</div>}
           </div>
           <div className="mb-3 text-end">
-            <a
-              href="#"
-              className="text-decoration-none"
-              onClick={toggleRecoveryForm}
-            >
+            <a href="#" className="text-decoration-none" onClick={toggleRecoveryForm}>
               Esqueceu sua senha?
             </a>
           </div>
-          <button
-            type="submit"
-            className="btn btn-warning w-100"
-            disabled={isLoading}
-          >
+          <button type="submit" className="btn btn-warning w-100" disabled={isLoading}>
             {isLoading ? (
               <>
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  role="status"
-                  aria-hidden="true"
-                ></span>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                 Processando...
               </>
             ) : (
