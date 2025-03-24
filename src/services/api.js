@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://credgrup.click/api", // Porta 80 com proxy Cloudflare
+  baseURL: "https://credgrup.click/api",
   headers: {
     "Content-Type": "application/json",
   },

@@ -43,8 +43,7 @@ function Login({ onLogin }) {
         password: formData.password,
       });
 
-      const { token, id, name, email, saldoReais, wbtcBalance, pontos, walletAddress, isAdmin } =
-        response.data;
+      const { token, id, name, email, saldoReais, wbtcBalance, pontos, walletAddress, isAdmin } = response.data;
 
       if (rememberMe) {
         localStorage.setItem("token", token);
@@ -59,15 +58,13 @@ function Login({ onLogin }) {
         saldoReais: saldoReais || 0,
         wbtcBalance: wbtcBalance || 0,
         pontos: pontos || 0,
-        walletAddress: walletAddress || "0xSeuEnderecoAqui",
+        walletAddress: walletAddress || "",
         isAdmin: isAdmin || false,
       };
       localStorage.setItem("currentUser", JSON.stringify(loggedUser));
 
       setSuccessMessage("Login realizado com sucesso! Redirecionando...");
-      if (onLogin) {
-        onLogin(loggedUser);
-      }
+      if (onLogin) onLogin(loggedUser);
 
       setTimeout(() => {
         setSuccessMessage("");
@@ -77,9 +74,7 @@ function Login({ onLogin }) {
     } catch (error) {
       console.error("Erro ao fazer login:", error);
       setErrors({
-        auth:
-          error.response?.data?.error ||
-          "Erro ao fazer login. Verifique sua conexão ou credenciais.",
+        auth: error.response?.data?.error || "Erro ao fazer login. Verifique suas credenciais.",
       });
     } finally {
       setIsLoading(false);
@@ -101,15 +96,20 @@ function Login({ onLogin }) {
       return;
     }
 
-    setRecoveryMessage({
-      type: "success",
-      text: "Instruções de recuperação enviadas para seu email. Verifique sua caixa de entrada.",
-    });
-    setTimeout(() => {
-      setRecoveryEmail("");
-      setRecoveryMessage("");
-      setShowRecoveryForm(false);
-    }, 3000);
+    try {
+      // Aqui você pode adicionar uma chamada real à API para recuperação de senha, se existir
+      setRecoveryMessage({
+        type: "success",
+        text: "Instruções de recuperação enviadas para seu email.",
+      });
+      setTimeout(() => {
+        setRecoveryEmail("");
+        setRecoveryMessage("");
+        setShowRecoveryForm(false);
+      }, 3000);
+    } catch (error) {
+      setRecoveryMessage({ type: "error", text: "Erro ao enviar instruções." });
+    }
   };
 
   const toggleRecoveryForm = (e) => {

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Key } from 'react-bootstrap-icons';
-import { useNavigate } from 'react-router-dom'; // Adicionado para redirecionamento
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 function Register({ onRegisterSuccess }) {
-  const navigate = useNavigate(); // Adicionado para navegação
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -51,27 +51,21 @@ function Register({ onRegisterSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-  
+
     setIsLoading(true);
     try {
       const response = await api.post('/users/register', {
         name: formData.name,
         email: formData.email,
-        password: formData.password,
         phone: formData.phone,
+        password: formData.password,
       });
-  
-      if (response.data.message === 'Usuário registrado com sucesso') {
+
+      if (response.status === 201 && response.data.message === 'Usuário registrado com sucesso') {
         setSuccessMessage('Cadastro realizado com sucesso! Redirecionando para o login...');
         setFormData({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
-  
-        if (onRegisterSuccess) {
-          onRegisterSuccess();
-        }
-  
-        setTimeout(() => {
-          navigate('/auth', { replace: true });
-        }, 2000);
+        if (onRegisterSuccess) onRegisterSuccess();
+        setTimeout(() => navigate('/auth', { replace: true }), 2000);
       } else {
         throw new Error('Resposta inesperada do servidor');
       }
@@ -84,6 +78,7 @@ function Register({ onRegisterSuccess }) {
       setIsLoading(false);
     }
   };
+
   return (
     <form onSubmit={handleSubmit}>
       {successMessage && (
