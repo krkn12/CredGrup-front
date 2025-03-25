@@ -6,32 +6,43 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('currentUser');
-    const token = localStorage.getItem('token');
-    if (storedUser && token) {
-      setCurrentUser(JSON.parse(storedUser));
-      console.log("Usuário carregado do localStorage:", JSON.parse(storedUser));
-    } else {
-      console.log("Nenhum usuário ou token encontrado no localStorage");
-    }
-    setIsLoading(false);
+    const initializeUser = () => {
+      const storedUser = localStorage.getItem('currentUser');
+      const token = localStorage.getItem('token');
+      if (storedUser && token) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setCurrentUser(parsedUser);
+          console.log("Usuário carregado do localStorage:", parsedUser);
+        } catch (e) {
+          console.error("Erro ao parsear currentUser:", e);
+          localStorage.clear();
+          sessionStorage.clear();
+        }
+      } else {
+        console.log("Nenhum usuário ou token encontrado");
+      }
+      setIsLoading(false);
+    };
+    initializeUser();
   }, []);
 
   const handleLogin = (userData) => {
     setCurrentUser(userData);
     localStorage.setItem('currentUser', JSON.stringify(userData));
-    console.log("Usuário logado:", userData);
+    localStorage.setItem('token', userData.token); // Certifique-se de que o token vem do login
+    console.log("Login realizado:", userData);
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('token');
+    localStorage.clear();
+    sessionStorage.clear();
     console.log("Logout realizado");
   };
 
   if (isLoading) {
-    return <div>Carregando...</div>; // Evita renderizar antes de verificar o estado
+    return <div>Carregando...</div>;
   }
 
   return (

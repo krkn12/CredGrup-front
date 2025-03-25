@@ -5,7 +5,7 @@ import { FiletypePdf, ChevronLeft, ChevronRight } from "react-bootstrap-icons";
 import api from "../services/api";
 import { processarVendaWBTC } from "../Hooks/Venderbitcoin";
 import Investments from "../Hooks/Investments";
-import Loans from "../Hooks/Loans"; // Corrigido para Loans.js
+import Loans from "../Hooks/Loans";
 import {
   processarDeposito,
   metodosPagamento,
@@ -34,11 +34,10 @@ import {
 } from "recharts";
 import useStatementExport from "../Hooks/useStatementExport";
 
-function Page_user({ currentUser }) {
+function Page_user({ currentUser, onLogout }) {
   const navigate = useNavigate();
   const walletAddress = "0x1c580b494ea23661feec1738bfd8e38adc264775";
 
-  // Estados
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState("");
@@ -77,12 +76,10 @@ function Page_user({ currentUser }) {
   const { exportFullStatement, exportCustomStatement, exportTransaction } =
     useStatementExport();
 
-  // Função para atualizar userData
   const updateUserData = (newData) => {
     setUserData((prev) => ({ ...prev, ...newData }));
   };
 
-  // Função para gerar histórico simplificado da carteira
   const fetchWalletHistory = (wbtcBalance) => {
     const dataPoints = [];
     const today = new Date();
@@ -101,17 +98,34 @@ function Page_user({ currentUser }) {
     return dataPoints;
   };
 
-  // useEffect para inicialização e atualização
   useEffect(() => {
+    if (!currentUser || !localStorage.getItem("token")) {
+      console.log("Usuário ou token ausente, redirecionando para /auth");
+      navigate("/auth", { replace: true });
+      return;
+    }
+
     const intervalId = startPriceUpdates(setWbtcBrlPrice, 10000);
     setPriceUpdateInterval(intervalId);
 
     const fetchInitialData = async () => {
       try {
-        const userResponse = await api.get("/users/me");
-        const data = userResponse.data;
+        const [
+          userResponse,
+          depositsResponse,
+          paymentsResponse,
+          loansResponse,
+          walletResponse,
+          investmentResponse,
+        ] = await Promise.all([
+          api.get("/users/me"),
+          api.get("/deposits/me"),
+          api.get("/payments/me"),
+          api.get("/loans/me"),
+          api.get("/wallet/data"),
+          api.get("/investments/me"),
+        ]);
 
-        const depositsResponse = await api.get("/deposits/me");
         const depositHistory = depositsResponse.data.map((deposit) => ({
           _id: deposit._id,
           description: `Depósito via ${deposit.metodoNome}`,
@@ -122,7 +136,6 @@ function Page_user({ currentUser }) {
           tipo: "deposito",
         }));
 
-        const paymentsResponse = await api.get("/payments/me");
         const paymentHistory = paymentsResponse.data.map((payment) => ({
           id: payment._id,
           description: payment.descricaoPagamento,
@@ -134,8 +147,6 @@ function Page_user({ currentUser }) {
           taxa: payment.taxa,
         }));
 
-        // Adicionar histórico de empréstimos
-        const loansResponse = await api.get("/loans/me");
         const loanHistory = loansResponse.data.map((loan) => ({
           _id: loan._id,
           description: `Empréstimo de R$ ${loan.amount.toFixed(2)}`,
@@ -149,23 +160,22 @@ function Page_user({ currentUser }) {
         const allHistory = [...depositHistory, ...paymentHistory, ...loanHistory];
         allHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        // Buscar dados de investimento
-        const investmentResponse = await api.get("/investments/me");
-        const investmentData = investmentResponse.data || { amount: 0 }; // Default caso não haja investimento
+        const investmentData = investmentResponse.data || { amount: 0 };
 
         setUserData({
-          ...data,
+          ...userResponse.data,
           paymentHistory: allHistory,
           investmentData,
         });
         setTotalPages(Math.ceil((allHistory.length || 1) / itemsPerPage));
-
-        const walletResponse = await api.get("/wallet/data");
         setWalletData(walletResponse.data);
         setWalletHistory(fetchWalletHistory(walletResponse.data.wbtcBalance));
         setWalletLoading(false);
       } catch (error) {
         console.error("Erro ao carregar dados iniciais:", error);
+        if (error.response?.status === 401) {
+          onLogout();
+        }
         navigate("/auth", { replace: true });
       } finally {
         setLoading(false);
@@ -174,11 +184,21 @@ function Page_user({ currentUser }) {
 
     const checkForUpdates = async () => {
       try {
-        const userResponse = await api.get("/users/me");
-        const depositsResponse = await api.get("/deposits/me");
-        const paymentsResponse = await api.get("/payments/me");
-        const loansResponse = await api.get("/loans/me");
-        const walletResponse = await api.get("/wallet/data");
+        const [
+          userResponse,
+          depositsResponse,
+          paymentsResponse,
+          loansResponse,
+          walletResponse,
+          investmentResponse,
+        ] = await Promise.all([
+          api.get("/users/me"),
+          api.get("/deposits/me"),
+          api.get("/payments/me"),
+          api.get("/loans/me"),
+          api.get("/wallet/data"),
+          api.get("/investments/me"),
+        ]);
 
         const depositHistory = depositsResponse.data.map((deposit) => ({
           _id: deposit._id,
@@ -214,8 +234,7 @@ function Page_user({ currentUser }) {
         const allHistory = [...depositHistory, ...paymentHistory, ...loanHistory];
         allHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        const investmentResponse = await api.get("/investments/me");
-        const investmentData = investmentResponse.data || { amount: 0 }; // Default caso não haja investimento
+        const investmentData = investmentResponse.data || { amount: 0 };
 
         setUserData({
           ...userResponse.data,
@@ -231,19 +250,16 @@ function Page_user({ currentUser }) {
       }
     };
 
-    if (currentUser) {
-      fetchInitialData();
-      const updateIntervalId = setInterval(checkForUpdates, 30000);
-      return () => {
-        clearInterval(updateIntervalId);
-        stopPriceUpdates(intervalId);
-      };
-    } else {
-      navigate("/auth", { replace: true });
-    }
-  }, [currentUser, navigate, itemsPerPage]);
+    fetchInitialData();
+    const updateIntervalId = setInterval(checkForUpdates, 30000);
 
-  // Funções de manipulação de modais e ações
+    return () => {
+      clearInterval(updateIntervalId);
+      stopPriceUpdates(intervalId);
+    };
+  }, [currentUser, navigate, itemsPerPage, onLogout]);
+
+  // Funções de manipulação de modais e ações permanecem iguais
   const handlePayBill = () => {
     setPixKey("");
     setValorPagamento("");
@@ -282,10 +298,8 @@ function Page_user({ currentUser }) {
   };
 
   const handleValorPagamentoChange = (e) => setValorPagamento(e.target.value);
-  const handleDescricaoPagamentoChange = (e) =>
-    setDescricaoPagamento(e.target.value);
-  const handleCategoriaPagamentoChange = (e) =>
-    setCategoriaPagamento(e.target.value);
+  const handleDescricaoPagamentoChange = (e) => setDescricaoPagamento(e.target.value);
+  const handleCategoriaPagamentoChange = (e) => setCategoriaPagamento(e.target.value);
 
   const handleProcessarPagamentoPix = async () => {
     setPixLoading(true);
@@ -297,10 +311,9 @@ function Page_user({ currentUser }) {
         setUserData((prev) => ({
           ...prev,
           paymentHistory: [resultado.novoPagamento, ...prev.paymentHistory],
+          saldoReais: prev.saldoReais - resultado.valorTotal,
         }));
-        setTotalPages(
-          Math.ceil((userData.paymentHistory.length + 1) / itemsPerPage)
-        );
+        setTotalPages(Math.ceil((userData.paymentHistory.length + 1) / itemsPerPage));
         setPixMensagem({
           tipo: "sucesso",
           texto: "Pagamento registrado! Aguarde a aprovação do administrador.",
@@ -367,8 +380,7 @@ function Page_user({ currentUser }) {
       const valor = parseFloat(valorDeposito);
       if (!valor || valor <= 0) throw new Error("Valor inválido");
       if (!metodoDeposito) throw new Error("Selecione um método de pagamento");
-      if (metodoDeposito !== "pix")
-        throw new Error("Apenas o método PIX está disponível");
+      if (metodoDeposito !== "pix") throw new Error("Apenas o método PIX está disponível");
       if (!comprovanteArquivo) throw new Error("O comprovante é obrigatório");
 
       const metodo = metodosPagamento.find((m) => m.id === metodoDeposito);
@@ -399,23 +411,16 @@ function Page_user({ currentUser }) {
         ...prev,
         paymentHistory: [novoDeposito, ...prev.paymentHistory],
       }));
-
-      setTotalPages(
-        Math.ceil((userData.paymentHistory.length + 1) / itemsPerPage)
-      );
+      setTotalPages(Math.ceil((userData.paymentHistory.length + 1) / itemsPerPage));
       setDepositoMensagem({
         tipo: "sucesso",
-        texto:
-          "Depósito registrado! Aguarde até 10 minutos para processamento.",
+        texto: "Depósito registrado! Aguarde até 10 minutos para processamento.",
       });
       setTimeout(() => setShowDepositoModal(false), 5000);
     } catch (error) {
       setDepositoMensagem({
         tipo: "erro",
-        texto:
-          error.message ||
-          error.response?.data?.message ||
-          "Erro ao processar depósito",
+        texto: error.message || error.response?.data?.message || "Erro ao processar depósito",
       });
     } finally {
       setDepositoLoading(false);
@@ -439,7 +444,6 @@ function Page_user({ currentUser }) {
 
     try {
       const wbtcToSell = parseFloat(valorVenda);
-
       if (!Number.isFinite(wbtcToSell) || wbtcToSell <= 0) {
         throw new Error("Por favor, informe um valor válido para a venda.");
       }
@@ -449,8 +453,7 @@ function Page_user({ currentUser }) {
 
       const result = await processarVendaWBTC(wbtcToSell, {
         onInicio: () => setSellLoading(true),
-        onErro: (mensagem) =>
-          setSellMensagem({ tipo: "erro", texto: mensagem }),
+        onErro: (mensagem) => setSellMensagem({ tipo: "erro", texto: mensagem }),
         onFim: () => setSellLoading(false),
       });
 
@@ -464,17 +467,11 @@ function Page_user({ currentUser }) {
         paymentHistory: [transaction, ...prev.paymentHistory],
       }));
 
-      setTotalPages(
-        Math.ceil(((userData.paymentHistory?.length || 0) + 1) / itemsPerPage)
-      );
+      setTotalPages(Math.ceil(((userData.paymentHistory?.length || 0) + 1) / itemsPerPage));
 
       setSellMensagem({
         tipo: "sucesso",
-        texto: `Venda de ${wbtcToSell.toFixed(
-          8
-        )} WBTC realizada com sucesso! Recebido: R$ ${transaction.amount.toFixed(
-          2
-        )} (Taxa: R$ ${transaction.taxa?.toFixed(2) || "0.00"}). +1 ponto!`,
+        texto: `Venda de ${wbtcToSell.toFixed(8)} WBTC realizada com sucesso! Recebido: R$ ${transaction.amount.toFixed(2)} (Taxa: R$ ${transaction.taxa?.toFixed(2) || "0.00"}). +1 ponto!`,
       });
 
       setTimeout(() => setShowSellModal(false), 3000);
@@ -482,10 +479,7 @@ function Page_user({ currentUser }) {
       console.error("Erro na venda:", error);
       setSellMensagem({
         tipo: "erro",
-        texto:
-          error.response?.data?.error ||
-          error.message ||
-          "Erro ao processar a venda. Tente novamente.",
+        texto: error.response?.data?.error || error.message || "Erro ao processar a venda. Tente novamente.",
       });
       setSellLoading(false);
     }
@@ -541,10 +535,8 @@ function Page_user({ currentUser }) {
     return userData.paymentHistory.slice(indexOfFirstItem, indexOfLastItem);
   };
 
-  const goToNextPage = () =>
-    currentPage < totalPages && setCurrentPage(currentPage + 1);
-  const goToPreviousPage = () =>
-    currentPage > 1 && setCurrentPage(currentPage - 1);
+  const goToNextPage = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
+  const goToPreviousPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
   const goToPage = (pageNumber) => setCurrentPage(pageNumber);
 
   const renderPageNumbers = () => {
@@ -557,790 +549,385 @@ function Page_user({ currentUser }) {
     }
     for (let i = startPage; i <= endPage; i++) {
       pageNumbers.push(
-        React.createElement(
-          "li",
-          {
-            key: i,
-            className: `page-item ${currentPage === i ? "active" : ""}`,
-          },
-          React.createElement(
-            "button",
-            { className: "page-link", onClick: () => goToPage(i) },
-            i
-          )
-        )
+        <li key={i} className={`page-item ${currentPage === i ? "active" : ""}`}>
+          <button className="page-link" onClick={() => goToPage(i)}>{i}</button>
+        </li>
       );
     }
     return pageNumbers;
   };
 
   if (loading) {
-    return React.createElement(
-      "div",
-      { className: "container text-center" },
-      React.createElement("h3", null, "Carregando...")
-    );
+    return <div className="container text-center"><h3>Carregando...</h3></div>;
   }
 
   if (!userData) {
-    return React.createElement(
-      "div",
-      { className: "container text-center" },
-      React.createElement("h3", null, "Erro ao carregar dados do usuário"),
-      React.createElement("p", null, "Tente novamente mais tarde.")
+    return (
+      <div className="container text-center">
+        <h3>Erro ao carregar dados do usuário</h3>
+        <p>Tente novamente mais tarde.</p>
+      </div>
     );
   }
 
-  return React.createElement(
-    "div",
-    { className: "container" },
-    React.createElement(
-      "div",
-      { className: "row" },
-      React.createElement(
-        "div",
-        { className: "col-md-8" },
-        React.createElement(
-          "h1",
-          { className: "user-title" },
-          `Bem-vindo, ${userData.name.split(" ")[0]}! 👋`
-        ),
-        React.createElement(
-          "p",
-          { className: "user-subtitle" },
-          "Gerencie suas contas e recompensas aqui."
-        )
-      ),
-      React.createElement(
-        "div",
-        { className: "col-md-4" },
-        React.createElement(
-          "div",
-          {
-            className:
-              "points-section d-flex justify-content-md-end justify-content-center",
-          },
-          React.createElement(
-            "div",
-            { className: "d-flex align-items-center" },
-            React.createElement(
-              "div",
-              { className: "points-circle me-2" },
-              React.createElement(
-                "span",
-                { className: "points-value" },
-                userData.pontos
-              )
-            ),
-            React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "span",
-                { className: "points-text fw-bold" },
-                "Seus Pontos"
-              ),
-              React.createElement("br"),
-              React.createElement(
-                "small",
-                { className: "text-muted" },
-                "Acumulados"
-              )
-            )
-          )
-        )
-      )
-    ),
+  return (
+    <div className="container">
+      <div className="row">
+        <div className="col-md-8">
+          <h1 className="user-title">Bem-vindo, {userData.name.split(" ")[0]}! 👋</h1>
+          <p className="user-subtitle">Gerencie suas contas e recompensas aqui.</p>
+        </div>
+        <div className="col-md-4">
+          <div className="points-section d-flex justify-content-md-end justify-content-center">
+            <div className="d-flex align-items-center">
+              <div className="points-circle me-2">
+                <span className="points-value">{userData.pontos}</span>
+              </div>
+              <div>
+                <span className="points-text fw-bold">Seus Pontos</span>
+                <br />
+                <small className="text-muted">Acumulados</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    React.createElement(
-      "div",
-      { className: "row" },
-      React.createElement(
-        "div",
-        { className: "col-md-6" },
-        React.createElement(
-          "div",
-          { className: "card" },
-          React.createElement(
-            "div",
-            { className: "card-body" },
-            React.createElement("h5", { className: "card-title" }, "Saldos"),
-            React.createElement(
-              "div",
-              {
-                className:
-                  "d-flex justify-content-between align-items-center mb-2",
-              },
-              React.createElement(
-                "div",
-                null,
-                React.createElement(
-                  "p",
-                  { className: "card-text mb-0" },
-                  React.createElement(
-                    "strong",
-                    null,
-                    (userData.wbtcBalance || 0).toFixed(8),
-                    " WBTC"
-                  ),
-                  React.createElement("br"),
-                  React.createElement(
-                    "small",
-                    null,
-                    "1 WBTC = ",
-                    wbtcBrlPrice
-                      ? React.createElement(
-                          "span",
-                          null,
-                          "R$ ",
-                          wbtcBrlPrice.toFixed(2),
-                          React.createElement(
-                            "span",
-                            {
-                              className: "ms-1 text-success",
-                              style: { fontSize: "0.8em" },
-                            },
-                            React.createElement("span", {
-                              className: "spinner-grow spinner-grow-sm",
-                              role: "status",
-                              "aria-hidden": "true",
-                              style: { width: "0.5rem", height: "0.5rem" },
-                            })
-                          )
-                        )
-                      : "Carregando..."
-                  )
-                )
-              ),
-              React.createElement(
-                "button",
-                {
-                  className: "btn btn-outline-warning",
-                  onClick: handleSellWbtc,
-                },
-                "Vender"
-              )
-            ),
-            React.createElement(
-              "p",
-              { className: "card-text mb-0" },
-              React.createElement(
-                "strong",
-                null,
-                "R$ ",
-                (userData.saldoReais || 0).toFixed(2)
-              ),
-              React.createElement("br"),
-              React.createElement(
-                "small",
-                null,
-                "Disponível em Reais"
-              )
-            )
-          )
-        )
-      ),
-      React.createElement(
-        "div",
-        { className: "col-md-6" },
-        React.createElement(
-          "div",
-          { className: "card" },
-          React.createElement(
-            "div",
-            { className: "card-body" },
-            React.createElement(
-              "h5",
-              { className: "card-title" },
-              "Ações Rápidas"
-            ),
-            React.createElement(
-              "div",
-              { className: "d-flex gap-2 flex-wrap" },
-              React.createElement(
-                "button",
-                {
-                  className: "btn btn-warning flex-grow-1",
-                  onClick: handlePayBill,
-                },
-                "Pagar Conta"
-              ),
-              React.createElement(
-                "button",
-                {
-                  className: "btn btn-warning flex-grow-1",
-                  onClick: handleDeposit,
-                },
-                "Depositar"
-              ),
-              React.createElement(Loans, {
-                currentUser: userData,
-                saldoReais: userData.saldoReais,
-                investmentData: userData.investmentData || { amount: 0 },
-                updateUserData,
-              })
-            )
-          )
-        )
-      )
-    ),
+      {/* O restante do JSX permanece igual */}
+      <div className="row">
+        <div className="col-md-6">
+          <div className="card">
+            <div className="card-body">
+              <h5 className="card-title">Saldos</h5>
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                  <p className="card-text mb-0">
+                    <strong>{(userData.wbtcBalance || 0).toFixed(8)} WBTC</strong>
+                    <br />
+                    <small>
+                      1 WBTC = {wbtcBrlPrice ? (
+                        <span>
+                          R$ {wbtcBrlPrice.toFixed(2)}
+                          <span className="ms-1 text-success" style={{ fontSize: "0.8em" }}>
+                            <span className="spinner-grow spinner-grow-sm" role="status" aria-hidden="true" style={{ width: "0.5rem", height: "0.5rem" }}></span>
+                          </span>
+                        </span>
+                      ) : "Carregando..."}
+                    </small>
+                  </p>
+                </div>
+                <button className="btn btn-outline-warning" onClick={handleSellWbtc}>Vender</button>
+              </div>
+              <p className="card-text mb-0">
+                <strong>R$ {(userData.saldoReais || 0).toFixed(2)}</strong>
+                <br />
+                <small>Disponível em Reais</small>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-6">
+          <div className="card">
+            <div className="card-body">
+              <h5 className="card-title">Ações Rápidas</h5>
+              <div className="d-flex gap-2 flex-wrap">
+                <button className="btn btn-warning flex-grow-1" onClick={handlePayBill}>Pagar Conta</button>
+                <button className="btn btn-warning flex-grow-1" onClick={handleDeposit}>Depositar</button>
+                <Loans
+                  currentUser={userData}
+                  saldoReais={userData.saldoReais}
+                  investmentData={userData.investmentData || { amount: 0 }}
+                  updateUserData={updateUserData}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    React.createElement(
-      "div",
-      { className: "row" },
-      React.createElement(
-        "div",
-        { className: "col-12" },
-        React.createElement(
-          "div",
-          { className: "card" },
-          React.createElement(
-            "div",
-            { className: "card-body" },
-            React.createElement(
-              "h5",
-              { className: "card-title" },
-              "Histórico da Carteira WBTC (Arbitrum One)"
-            ),
-            React.createElement(
-              "p",
-              { className: "wallet-address" },
-              React.createElement("small", null, "Endereço: ", walletAddress)
-            ),
-            walletLoading
-              ? React.createElement(
-                  "div",
-                  { className: "text-center py-3" },
-                  React.createElement(
-                    "p",
-                    null,
-                    "Carregando dados da carteira..."
-                  )
-                )
-              : React.createElement(
-                  "div",
-                  { className: "wallet-chart" },
-                  React.createElement(
-                    ResponsiveContainer,
-                    { width: "100%", height: 200 },
-                    React.createElement(LineChart, {
-                      data: walletHistory,
-                      margin: { top: 5, right: 20, bottom: 5, left: 0 },
-                      children: [
-                        React.createElement(CartesianGrid, {
-                          strokeDasharray: "3 3",
-                          stroke: "#eee",
-                        }),
-                        React.createElement(XAxis, {
-                          dataKey: "date",
-                          tickFormatter: (date) => {
-                            const d = new Date(date);
-                            return `${d.getMonth() + 1}/${d
-                              .getFullYear()
-                              .toString()
-                              .substr(2, 2)}`;
-                          },
-                          interval: 3,
-                        }),
-                        React.createElement(YAxis, {
-                          tickFormatter: (value) => value.toFixed(6),
-                          domain: ["dataMin", "dataMax"],
-                        }),
-                        React.createElement(Tooltip, {
-                          formatter: (value) => [
-                            `${value.toFixed(8)} WBTC`,
-                            "Saldo",
-                          ],
-                          labelFormatter: (date) =>
-                            `Data: ${new Date(date).toLocaleDateString()}`,
-                        }),
-                        React.createElement(Line, {
-                          type: "monotone",
-                          dataKey: "value",
-                          stroke: "#2a5298",
-                          strokeWidth: 2,
-                          dot: { r: 2 },
-                          activeDot: { r: 4 },
-                        }),
-                      ],
-                    })
-                  ),
-                  React.createElement(
-                    "div",
-                    { className: "text-center mt-1" },
-                    React.createElement(
-                      "small",
-                      { className: "text-muted" },
-                      "Saldo atual: ",
-                      walletData.wbtcBalance.toFixed(8),
-                      " WBTC | Última atualização: ",
-                      new Date(walletData.lastUpdated).toLocaleString("pt-BR")
-                    )
-                  )
-                )
-          )
-        )
-      )
-    ),
+      <div className="row">
+        <div className="col-12">
+          <div className="card">
+            <div className="card-body">
+              <h5 className="card-title">Histórico da Carteira WBTC (Arbitrum One)</h5>
+              <p className="wallet-address"><small>Endereço: {walletAddress}</small></p>
+              {walletLoading ? (
+                <div className="text-center py-3">
+                  <p>Carregando dados da carteira...</p>
+                </div>
+              ) : (
+                <div className="wallet-chart">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={walletHistory} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={(date) => {
+                          const d = new Date(date);
+                          return `${d.getMonth() + 1}/${d.getFullYear().toString().substr(2, 2)}`;
+                        }}
+                        interval={3}
+                      />
+                      <YAxis tickFormatter={(value) => value.toFixed(6)} domain={["dataMin", "dataMax"]} />
+                      <Tooltip
+                        formatter={(value) => [`${value.toFixed(8)} WBTC`, "Saldo"]}
+                        labelFormatter={(date) => `Data: ${new Date(date).toLocaleDateString()}`}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        stroke="#2a5298"
+                        strokeWidth={2}
+                        dot={{ r: 2 }}
+                        activeDot={{ r: 4 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                  <div className="text-center mt-1">
+                    <small className="text-muted">
+                      Saldo atual: {walletData.wbtcBalance.toFixed(8)} WBTC | Última atualização: {new Date(walletData.lastUpdated).toLocaleString("pt-BR")}
+                    </small>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
-    React.createElement(
-      "div",
-      { className: "row" },
-      React.createElement(
-        "div",
-        { className: "col-12" },
-        React.createElement(Investments, {
-          currentUser,
-          saldoReais: userData.saldoReais,
-          updateUserData,
-        })
-      )
-    ),
+      <div className="row">
+        <div className="col-12">
+          <Investments currentUser={currentUser} saldoReais={userData.saldoReais} updateUserData={updateUserData} />
+        </div>
+      </div>
 
-    React.createElement(
-      "div",
-      { className: "row" },
-      React.createElement(
-        "div",
-        { className: "col-12" },
-        React.createElement(
-          "div",
-          { className: "card" },
-          React.createElement(
-            "div",
-            { className: "card-body" },
-            React.createElement(
-              "div",
-              {
-                className:
-                  "d-flex justify-content-between align-items-center mb-3 flex-wrap",
-              },
-              React.createElement(
-                "h5",
-                { className: "card-title mb-0" },
-                "Histórico de Transações"
-              ),
-              React.createElement(
-                "div",
-                {
-                  className:
-                    "d-flex align-items-center flex-wrap export-controls gap-2",
-                },
-                React.createElement(
-                  "button",
-                  {
-                    className: "btn btn-sm btn-outline-primary",
-                    onClick: handleExportFullStatement,
-                  },
-                  "Extrato Completo"
-                ),
-                React.createElement("input", {
-                  type: "date",
-                  className: "form-control form-control-sm",
-                  value: startDate,
-                  onChange: (e) => setStartDate(e.target.value),
-                  style: { maxWidth: "150px" },
-                }),
-                React.createElement("input", {
-                  type: "date",
-                  className: "form-control form-control-sm",
-                  value: endDate,
-                  onChange: (e) => setEndDate(e.target.value),
-                  style: { maxWidth: "150px" },
-                }),
-                React.createElement(
-                  "button",
-                  {
-                    className: "btn btn-sm btn-outline-primary",
-                    onClick: handleExportCustomStatement,
-                    disabled: !startDate || !endDate,
-                  },
-                  "Extrato Personalizado"
-                )
-              )
-            ),
-            userData.paymentHistory.length > 0
-              ? React.createElement(
-                  React.Fragment,
-                  null,
-                  React.createElement(
-                    "div",
-                    { className: "table-responsive" },
-                    React.createElement(
-                      "table",
-                      { className: "table table-striped transaction-table" },
-                      React.createElement(
-                        "thead",
-                        null,
-                        React.createElement(
-                          "tr",
-                          null,
-                          React.createElement("th", null, "Descrição"),
-                          React.createElement("th", null, "Valor (R$)"),
-                          React.createElement("th", null, "Data"),
-                          React.createElement("th", null, "Cashback (WBTC)"),
-                          React.createElement("th", null, "Status"),
-                          React.createElement("th", null)
-                        )
-                      ),
-                      React.createElement(
-                        "tbody",
-                        null,
-                        getCurrentItems().map((item) =>
-                          React.createElement(
-                            "tr",
-                            { key: item._id || item.id },
-                            React.createElement("td", null, item.description),
-                            React.createElement(
-                              "td",
-                              null,
-                              item.amount.toFixed(2)
-                            ),
-                            React.createElement(
-                              "td",
-                              null,
-                              new Date(item.date).toLocaleDateString("pt-BR")
-                            ),
-                            React.createElement(
-                              "td",
-                              null,
-                              React.createElement(
-                                "span",
-                                { className: "cashback-value" },
-                                (item.cashback || 0).toFixed(8),
-                                " WBTC"
-                              )
-                            ),
-                            React.createElement("td", null, item.status),
-                            React.createElement(
-                              "td",
-                              null,
-                              (item.status === "Concluído" || item.status === "Pago") &&
-                                React.createElement(
-                                  "button",
-                                  {
-                                    className: "btn btn-link p-0 export-btn",
-                                    onClick: () => handleExportTransaction(item),
-                                    title: "Exportar em PDF",
-                                  },
-                                  React.createElement(FiletypePdf, { size: 16 })
-                                )
-                            )
-                          )
-                        )
-                      )
-                    )
-                  ),
-                  React.createElement(
-                    "nav",
-                    { "aria-label": "Paginação do histórico" },
-                    React.createElement(
-                      "ul",
-                      { className: "pagination justify-content-center mt-3" },
-                      React.createElement(
-                        "li",
-                        {
-                          className: `page-item ${
-                            currentPage === 1 ? "disabled" : ""
-                          }`,
-                        },
-                        React.createElement(
-                          "button",
-                          { className: "page-link", onClick: goToPreviousPage },
-                          React.createElement(ChevronLeft)
-                        )
-                      ),
-                      renderPageNumbers(),
-                      React.createElement(
-                        "li",
-                        {
-                          className: `page-item ${
-                            currentPage === totalPages ? "disabled" : ""
-                          }`,
-                        },
-                        React.createElement(
-                          "button",
-                          { className: "page-link", onClick: goToNextPage },
-                          React.createElement(ChevronRight)
-                        )
-                      )
-                    )
-                  )
-                )
-              : React.createElement(
-                  "p",
-                  null,
-                  "Nenhuma transação realizada ainda."
-                )
-          )
-        )
-      )
-    ),
+      <div className="row">
+        <div className="col-12">
+          <div className="card">
+            <div className="card-body">
+              <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                <h5 className="card-title mb-0">Histórico de Transações</h5>
+                <div className="d-flex align-items-center flex-wrap export-controls gap-2">
+                  <button className="btn btn-sm btn-outline-primary" onClick={handleExportFullStatement}>Extrato Completo</button>
+                  <input
+                    type="date"
+                    className="form-control form-control-sm"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    style={{ maxWidth: "150px" }}
+                  />
+                  <input
+                    type="date"
+                    className="form-control form-control-sm"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    style={{ maxWidth: "150px" }}
+                  />
+                  <button
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={handleExportCustomStatement}
+                    disabled={!startDate || !endDate}
+                  >
+                    Extrato Personalizado
+                  </button>
+                </div>
+              </div>
+              {userData.paymentHistory.length > 0 ? (
+                <>
+                  <div className="table-responsive">
+                    <table className="table table-striped transaction-table">
+                      <thead>
+                        <tr>
+                          <th>Descrição</th>
+                          <th>Valor (R$)</th>
+                          <th>Data</th>
+                          <th>Cashback (WBTC)</th>
+                          <th>Status</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {getCurrentItems().map((item) => (
+                          <tr key={item._id || item.id}>
+                            <td>{item.description}</td>
+                            <td>{item.amount.toFixed(2)}</td>
+                            <td>{new Date(item.date).toLocaleDateString("pt-BR")}</td>
+                            <td><span className="cashback-value">{(item.cashback || 0).toFixed(8)} WBTC</span></td>
+                            <td>{item.status}</td>
+                            <td>
+                              {(item.status === "Concluído" || item.status === "Pago") && (
+                                <button
+                                  className="btn btn-link p-0 export-btn"
+                                  onClick={() => handleExportTransaction(item)}
+                                  title="Exportar em PDF"
+                                >
+                                  <FiletypePdf size={16} />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <nav aria-label="Paginação do histórico">
+                    <ul className="pagination justify-content-center mt-3">
+                      <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+                        <button className="page-link" onClick={goToPreviousPage}><ChevronLeft /></button>
+                      </li>
+                      {renderPageNumbers()}
+                      <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
+                        <button className="page-link" onClick={goToNextPage}><ChevronRight /></button>
+                      </li>
+                    </ul>
+                  </nav>
+                </>
+              ) : (
+                <p>Nenhuma transação realizada ainda.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
-    showPixModal &&
-      React.createElement(
-        "div",
-        {
-          className: "modal fade show",
-          style: { display: "block" },
-          tabIndex: "-1",
-        },
-        React.createElement(
-          "div",
-          { className: "modal-dialog modal-dialog-centered" },
-          React.createElement(
-            "div",
-            { className: "modal-content" },
-            React.createElement(
-              "div",
-              { className: "modal-header" },
-              React.createElement(
-                "h5",
-                { className: "modal-title" },
-                "Pagar Conta com Pix"
-              ),
-              React.createElement("button", {
-                type: "button",
-                className: "btn-close",
-                onClick: handleClosePixModal,
-                disabled: pixLoading,
-              })
-            ),
-            React.createElement(
-              "div",
-              { className: "modal-body" },
-              pixMensagem &&
-                React.createElement(
-                  "div",
-                  {
-                    className: `alert alert-${
-                      pixMensagem.tipo === "sucesso" ? "success" : "danger"
-                    }`,
-                  },
-                  pixMensagem.texto
-                ),
-              React.createElement(
-                "div",
-                { className: "mb-3" },
-                React.createElement(
-                  "label",
-                  { htmlFor: "pixKey", className: "form-label" },
-                  "Chave Pix do Destinatário"
-                ),
-                React.createElement("input", {
-                  type: "text",
-                  className: "form-control",
-                  id: "pixKey",
-                  placeholder: "Cole a chave Pix aqui",
-                  value: pixKey,
-                  onChange: handlePixKeyChange,
-                  disabled: pixLoading,
-                  autoFocus: true,
-                })
-              ),
-              pixDetails &&
-                React.createElement(
-                  "div",
-                  { className: "mb-3" },
-                  React.createElement(
-                    "div",
-                    { className: "card bg-light" },
-                    React.createElement(
-                      "div",
-                      { className: "card-body" },
-                      React.createElement(
-                        "h6",
-                        { className: "card-title" },
-                        "Detalhes do Pagamento"
-                      ),
-                      React.createElement(
-                        "p",
-                        null,
-                        React.createElement("strong", null, "Destinatário: "),
-                        pixDetails.destinatario
-                      ),
-                      React.createElement(
-                        "p",
-                        null,
-                        React.createElement("strong", null, "Valor: "),
-                        "R$ ",
-                        pixDetails.valor || valorPagamento
-                      )
-                    )
-                  )
-                ),
-              React.createElement(
-                "div",
-                { className: "mb-3" },
-                React.createElement(
-                  "label",
-                  { htmlFor: "valorPagamento", className: "form-label" },
-                  "Valor do Pagamento (R$)"
-                ),
-                React.createElement("input", {
-                  type: "number",
-                  className: "form-control",
-                  id: "valorPagamento",
-                  placeholder: "Digite o valor",
-                  value: valorPagamento,
-                  onChange: handleValorPagamentoChange,
-                  disabled: pixLoading,
-                  min: "0.01",
-                  step: "0.01",
-                })
-              ),
-              React.createElement(
-                "div",
-                { className: "mb-3" },
-                React.createElement(
-                  "label",
-                  { htmlFor: "categoriaPagamento", className: "form-label" },
-                  "Categoria do Pagamento"
-                ),
-                React.createElement(
-                  "select",
-                  {
-                    className: "form-select",
-                    id: "categoriaPagamento",
-                    value: categoriaPagamento,
-                    onChange: handleCategoriaPagamentoChange,
-                    disabled: pixLoading,
-                  },
-                  React.createElement(
-                    "option",
-                    { value: "" },
-                    "Selecione uma categoria"
-                  ),
-                  categoriasPagamento.map((cat) =>
-                    React.createElement(
-                      "option",
-                      { key: cat.id, value: cat.id },
-                      cat.nome
-                    )
-                  )
-                )
-              ),
-              React.createElement(
-                "div",
-                { className: "mb-3" },
-                React.createElement(
-                  "label",
-                  { htmlFor: "descricaoPagamento", className: "form-label" },
-                  "Descrição"
-                ),
-                React.createElement("input", {
-                  type: "text",
-                  className: "form-control",
-                  id: "descricaoPagamento",
-                  placeholder: "Digite uma descrição",
-                  value: descricaoPagamento,
-                  onChange: handleDescricaoPagamentoChange,
-                  disabled: pixLoading,
-                })
-              ),
-              valorPagamento &&
-                categoriaPagamento &&
-                React.createElement(
-                  "div",
-                  { className: "mb-3" },
-                  React.createElement(
-                    "div",
-                    { className: "card bg-light" },
-                    React.createElement(
-                      "div",
-                      { className: "card-body" },
-                      React.createElement(
-                        "h6",
-                        { className: "card-title" },
-                        "Resumo do Pagamento"
-                      ),
-                      React.createElement(
-                        "p",
-                        null,
-                        "Valor do pagamento: R$ ",
-                        parseFloat(valorPagamento).toFixed(2)
-                      ),
-                      React.createElement(
-                        "p",
-                        null,
-                        "Taxa (3%): R$ ",
-                        (parseFloat(valorPagamento) * 0.03).toFixed(2)
-                      ),
-                      React.createElement(
-                        "p",
-                        null,
-                        "Total a pagar: R$ ",
-                        (parseFloat(valorPagamento) * 1.03).toFixed(2)
-                      ),
-                      React.createElement(
-                        "p",
-                        null,
-                        "Cashback estimado: ",
-                        calcularCashback(valorPagamento, wbtcBrlPrice),
-                        " WBTC (após aprovação)"
-                      )
-                    )
-                  )
-                )
-            ),
-            React.createElement(
-              "div",
-              { className: "modal-footer" },
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  className: "btn btn-secondary",
-                  onClick: handleClosePixModal,
-                  disabled: pixLoading,
-                },
-                "Cancelar"
-              ),
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  className: "btn btn-warning",
-                  onClick: handleProcessarPagamentoPix,
-                  disabled:
+      {showPixModal && (
+        <div className="modal fade show" style={{ display: "block" }} tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Pagar Conta com Pix</h5>
+                <button type="button" className="btn-close" onClick={handleClosePixModal} disabled={pixLoading}></button>
+              </div>
+              <div className="modal-body">
+                {pixMensagem && (
+                  <div className={`alert alert-${pixMensagem.tipo === "sucesso" ? "success" : "danger"}`}>
+                    {pixMensagem.texto}
+                  </div>
+                )}
+                <div className="mb-3">
+                  <label htmlFor="pixKey" className="form-label">Chave Pix do Destinatário</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="pixKey"
+                    placeholder="Cole a chave Pix aqui"
+                    value={pixKey}
+                    onChange={handlePixKeyChange}
+                    disabled={pixLoading}
+                    autoFocus
+                  />
+                </div>
+                {pixDetails && (
+                  <div className="mb-3">
+                    <div className="card bg-light">
+                      <div className="card-body">
+                        <h6 className="card-title">Detalhes do Pagamento</h6>
+                        <p><strong>Destinatário:</strong> {pixDetails.destinatario}</p>
+                        <p><strong>Valor:</strong> R$ {pixDetails.valor || valorPagamento}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="mb-3">
+                  <label htmlFor="valorPagamento" className="form-label">Valor do Pagamento (R$)</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="valorPagamento"
+                    placeholder="Digite o valor"
+                    value={valorPagamento}
+                    onChange={handleValorPagamentoChange}
+                    disabled={pixLoading}
+                    min="0.01"
+                    step="0.01"
+                  />
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="categoriaPagamento" className="form-label">Categoria do Pagamento</label>
+                  <select
+                    className="form-select"
+                    id="categoriaPagamento"
+                    value={categoriaPagamento}
+                    onChange={handleCategoriaPagamentoChange}
+                    disabled={pixLoading}
+                  >
+                    <option value="">Selecione uma categoria</option>
+                    {categoriasPagamento.map((cat) => (
+                      <option key={cat.id} value={cat.id}>{cat.nome}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="descricaoPagamento" className="form-label">Descrição</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="descricaoPagamento"
+                    placeholder="Digite uma descrição"
+                    value={descricaoPagamento}
+                    onChange={handleDescricaoPagamentoChange}
+                    disabled={pixLoading}
+                  />
+                </div>
+                {valorPagamento && categoriaPagamento && (
+                  <div className="mb-3">
+                    <div className="card bg-light">
+                      <div className="card-body">
+                        <h6 className="card-title">Resumo do Pagamento</h6>
+                        <p>Valor do pagamento: R$ {parseFloat(valorPagamento).toFixed(2)}</p>
+                        <p>Taxa (3%): R$ {(parseFloat(valorPagamento) * 0.03).toFixed(2)}</p>
+                        <p>Total a pagar: R$ {(parseFloat(valorPagamento) * 1.03).toFixed(2)}</p>
+                        <p>Cashback estimado: {calcularCashback(valorPagamento, wbtcBrlPrice)} WBTC (após aprovação)</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleClosePixModal}
+                  disabled={pixLoading}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-warning"
+                  onClick={handleProcessarPagamentoPix}
+                  disabled={
                     pixLoading ||
                     !valorPagamento ||
                     !categoriaPagamento ||
                     !descricaoPagamento.trim() ||
-                    parseFloat(valorPagamento) * 1.03 > userData.saldoReais,
-                },
-                pixLoading
-                  ? React.createElement(
-                      React.Fragment,
-                      null,
-                      React.createElement(
-                        "span",
-                        {
-                          className: "spinner-border spinner-border-sm me-2",
-                          role: "status",
-                          "aria-hidden": "true",
-                        }
-                      ),
-                      "Processando..."
-                    )
-                  : "Confirmar Pagamento"
-              )
-            )
-          )
-        ),
-        React.createElement("div", {
-          className: "modal-backdrop fade show",
-          onClick: !pixLoading ? handleClosePixModal : null,
-          style: { zIndex: -1 },
-        })
-      ),
+                    parseFloat(valorPagamento) * 1.03 > userData.saldoReais
+                  }
+                >
+                  {pixLoading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Processando...
+                    </>
+                  ) : (
+                    "Confirmar Pagamento"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            className="modal-backdrop fade show"
+            onClick={!pixLoading ? handleClosePixModal : null}
+            style={{ zIndex: -1 }}
+          ></div>
+        </div>
+      )}
 
-    showDepositoModal &&
-      React.createElement(
-        "div",
-        {
-          className: "modal-backdrop",
-          style: {
+      {showDepositoModal && (
+        <div
+          className="modal-backdrop"
+          style={{
             position: "fixed",
             top: 0,
             left: 0,
@@ -1351,402 +938,227 @@ function Page_user({ currentUser }) {
             alignItems: "center",
             justifyContent: "center",
             zIndex: 1050,
-          },
-        },
-        React.createElement(
-          "div",
-          {
-            className: "modal-content",
-            style: {
+          }}
+        >
+          <div
+            className="modal-content"
+            style={{
               backgroundColor: "white",
               borderRadius: "10px",
               width: "90%",
               maxWidth: "500px",
               padding: "20px",
-            },
-          },
-          React.createElement(
-            "div",
-            { className: "modal-header" },
-            React.createElement(
-              "h5",
-              { className: "modal-title" },
-              "Realizar Depósito"
-            ),
-            React.createElement("button", {
-              type: "button",
-              className: "btn-close",
-              onClick: handleCloseDepositoModal,
-              disabled: depositoLoading,
-            })
-          ),
-          React.createElement(
-            "div",
-            { className: "modal-body" },
-            depositoMensagem &&
-              React.createElement(
-                "div",
-                {
-                  className: `alert alert-${
-                    depositoMensagem.tipo === "sucesso" ? "success" : "danger"
-                  }`,
-                },
-                depositoMensagem.texto
-              ),
-            React.createElement(
-              "div",
-              { className: "alert alert-info mb-3" },
-              React.createElement(
-                "h6",
-                { className: "alert-heading" },
-                "Informações para depósito PIX"
-              ),
-              React.createElement(
-                "p",
-                { className: "mb-1" },
-                React.createElement("strong", null, "Chave PIX (CPF): "),
-                "01558516247"
-              ),
-              React.createElement(
-                "p",
-                { className: "mb-1" },
-                React.createElement("strong", null, "Favorecido: "),
-                "Josias Silva Monteiro"
-              ),
-              React.createElement("hr"),
-              React.createElement(
-                "small",
-                null,
-                "Faça o depósito PIX usando os dados acima e envie o comprovante para confirmar seu depósito."
-              )
-            ),
-            React.createElement(
-              "div",
-              { className: "mb-3" },
-              React.createElement(
-                "label",
-                { htmlFor: "valorDeposito", className: "form-label" },
-                "Valor do Depósito (R$)"
-              ),
-              React.createElement("input", {
-                type: "number",
-                className: "form-control",
-                id: "valorDeposito",
-                placeholder: "Digite o valor",
-                value: valorDeposito,
-                onChange: handleValorDepositoChange,
-                disabled: depositoLoading,
-                min: "1",
-                step: "0.01",
-              })
-            ),
-            React.createElement(
-              "div",
-              { className: "mb-3" },
-              React.createElement(
-                "label",
-                { htmlFor: "metodoDeposito", className: "form-label" },
-                "Método de Pagamento"
-              ),
-              React.createElement(
-                "select",
-                {
-                  className: "form-select",
-                  id: "metodoDeposito",
-                  value: metodoDeposito,
-                  onChange: handleMetodoDepositoChange,
-                  disabled: depositoLoading,
-                },
-                React.createElement(
-                  "option",
-                  { value: "" },
-                  "Selecione um método"
-                ),
-                metodosPagamento.map((metodo) =>
-                  React.createElement(
-                    "option",
-                    {
-                      key: metodo.id,
-                      value: metodo.id,
-                      disabled: !metodo.disponivel,
-                    },
-                    metodo.nome,
-                    " ",
-                    metodo.taxa > 0 && metodo.id !== "pix"
-                      ? `(Taxa: ${metodo.taxa}%)`
-                      : "(Sem taxa)"
-                  )
-                )
-              )
-            ),
-            React.createElement(
-              "div",
-              { className: "mb-3" },
-              React.createElement(
-                "label",
-                { htmlFor: "comprovante", className: "form-label" },
-                "Comprovante (Obrigatório)"
-              ),
-              React.createElement("input", {
-                type: "file",
-                className: "form-control",
-                id: "comprovante",
-                accept: "image/*,.pdf",
-                onChange: handleComprovanteChange,
-                disabled: depositoLoading,
-                required: true,
-              }),
-              React.createElement(
-                "small",
-                { className: "text-muted" },
-                "Para confirmar seu depósito, precisamos do comprovante da transação."
-              )
-            ),
-            valorDeposito &&
-              metodoDeposito &&
-              React.createElement(
-                "div",
-                { className: "mb-3" },
-                React.createElement(
-                  "div",
-                  { className: "card bg-light" },
-                  React.createElement(
-                    "div",
-                    { className: "card-body" },
-                    React.createElement(
-                      "h6",
-                      { className: "card-title" },
-                      "Resumo do Depósito"
-                    ),
-                    React.createElement(
-                      "p",
-                      null,
-                      "Valor do depósito: R$ ",
-                      parseFloat(valorDeposito).toFixed(2)
-                    ),
-                    taxaDeposito > 0 &&
-                      React.createElement(
-                        "p",
-                        null,
-                        "Taxa: R$ ",
-                        taxaDeposito.toFixed(2)
-                      ),
-                    React.createElement(
-                      "p",
-                      { className: "fw-bold" },
-                      "Total a pagar: R$ ",
-                      (parseFloat(valorDeposito) + taxaDeposito).toFixed(2)
-                    )
-                  )
-                )
-              )
-          ),
-          React.createElement(
-            "div",
-            { className: "modal-footer" },
-            React.createElement(
-              "button",
-              {
-                type: "button",
-                className: "btn btn-secondary",
-                onClick: handleCloseDepositoModal,
-                disabled: depositoLoading,
-              },
-              "Cancelar"
-            ),
-            React.createElement(
-              "button",
-              {
-                type: "button",
-                className: "btn btn-warning",
-                onClick: handleProcessarDeposito,
-                disabled:
+            }}
+          >
+            <div className="modal-header">
+              <h5 className="modal-title">Realizar Depósito</h5>
+              <button
+                type="button"
+                className="btn-close"
+                onClick={handleCloseDepositoModal}
+                disabled={depositoLoading}
+              ></button>
+            </div>
+            <div className="modal-body">
+              {depositoMensagem && (
+                <div className={`alert alert-${depositoMensagem.tipo === "sucesso" ? "success" : "danger"}`}>
+                  {depositoMensagem.texto}
+                </div>
+              )}
+              <div className="alert alert-info mb-3">
+                <h6 className="alert-heading">Informações para depósito PIX</h6>
+                <p className="mb-1"><strong>Chave PIX (CPF):</strong> 01558516247</p>
+                <p className="mb-1"><strong>Favorecido:</strong> Josias Silva Monteiro</p>
+                <hr />
+                <small>Faça o depósito PIX usando os dados acima e envie o comprovante para confirmar seu depósito.</small>
+              </div>
+              <div className="mb-3">
+                <label htmlFor="valorDeposito" className="form-label">Valor do Depósito (R$)</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  id="valorDeposito"
+                  placeholder="Digite o valor"
+                  value={valorDeposito}
+                  onChange={handleValorDepositoChange}
+                  disabled={depositoLoading}
+                  min="1"
+                  step="0.01"
+                />
+              </div>
+              <div className="mb-3">
+                <label htmlFor="metodoDeposito" className="form-label">Método de Pagamento</label>
+                <select
+                  className="form-select"
+                  id="metodoDeposito"
+                  value={metodoDeposito}
+                  onChange={handleMetodoDepositoChange}
+                  disabled={depositoLoading}
+                >
+                  <option value="">Selecione um método</option>
+                  {metodosPagamento.map((metodo) => (
+                    <option
+                      key={metodo.id}
+                      value={metodo.id}
+                      disabled={!metodo.disponivel}
+                    >
+                      {metodo.nome} {metodo.taxa > 0 && metodo.id !== "pix" ? `(Taxa: ${metodo.taxa}%)` : "(Sem taxa)"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="mb-3">
+                <label htmlFor="comprovante" className="form-label">Comprovante (Obrigatório)</label>
+                <input
+                  type="file"
+                  className="form-control"
+                  id="comprovante"
+                  accept="image/*,.pdf"
+                  onChange={handleComprovanteChange}
+                  disabled={depositoLoading}
+                  required
+                />
+                <small className="text-muted">Para confirmar seu depósito, precisamos do comprovante da transação.</small>
+              </div>
+              {valorDeposito && metodoDeposito && (
+                <div className="mb-3">
+                  <div className="card bg-light">
+                    <div className="card-body">
+                      <h6 className="card-title">Resumo do Depósito</h6>
+                      <p>Valor do depósito: R$ {parseFloat(valorDeposito).toFixed(2)}</p>
+                      {taxaDeposito > 0 && <p>Taxa: R$ {taxaDeposito.toFixed(2)}</p>}
+                      <p className="fw-bold">Total a pagar: R$ {(parseFloat(valorDeposito) + taxaDeposito).toFixed(2)}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleCloseDepositoModal}
+                disabled={depositoLoading}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn btn-warning"
+                onClick={handleProcessarDeposito}
+                disabled={
                   depositoLoading ||
                   !valorDeposito ||
                   !metodoDeposito ||
                   !comprovanteArquivo ||
-                  metodoDeposito !== "pix",
-              },
-              depositoLoading
-                ? React.createElement(
-                    React.Fragment,
-                    null,
-                    React.createElement(
-                      "span",
-                      {
-                        className: "spinner-border spinner-border-sm me-2",
-                        role: "status",
-                        "aria-hidden": "true",
-                      }
-                    ),
-                    "Processando..."
-                  )
-                : "Confirmar Depósito"
-            )
-          )
-        )
-      ),
+                  metodoDeposito !== "pix"
+                }
+              >
+                {depositoLoading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Processando...
+                  </>
+                ) : (
+                  "Confirmar Depósito"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-    showSellModal &&
-      React.createElement(
-        "div",
-        {
-          className: "modal fade show",
-          style: { display: "block" },
-          tabIndex: "-1",
-        },
-        React.createElement(
-          "div",
-          { className: "modal-dialog modal-dialog-centered" },
-          React.createElement(
-            "div",
-            { className: "modal-content" },
-            React.createElement(
-              "div",
-              { className: "modal-header" },
-              React.createElement("h5", { className: "modal-title" }, "Vender WBTC"),
-              React.createElement("button", {
-                type: "button",
-                className: "btn-close",
-                onClick: handleCloseSellModal,
-                disabled: sellLoading,
-              })
-            ),
-            React.createElement(
-              "div",
-              { className: "modal-body" },
-              sellMensagem &&
-                React.createElement(
-                  "div",
-                  {
-                    className: `alert alert-${
-                      sellMensagem.tipo === "sucesso" ? "success" : "danger"
-                    }`,
-                  },
-                  sellMensagem.texto
-                ),
-              React.createElement(
-                "div",
-                { className: "mb-3" },
-                React.createElement(
-                  "label",
-                  { htmlFor: "valorVenda", className: "form-label" },
-                  "Quantidade de WBTC a Vender"
-                ),
-                React.createElement("input", {
-                  type: "number",
-                  className: "form-control",
-                  id: "valorVenda",
-                  placeholder: "Digite a quantidade",
-                  value: valorVenda,
-                  onChange: handleValorVendaChange,
-                  disabled: sellLoading,
-                  min: "0.00000001",
-                  step: "0.00000001",
-                  autoFocus: true,
-                }),
-                React.createElement(
-                  "small",
-                  { className: "text-muted" },
-                  "Saldo disponível: ",
-                  (userData.wbtcBalance || 0).toFixed(8),
-                  " WBTC"
-                )
-              ),
-              valorVenda &&
-                !isNaN(parseFloat(valorVenda)) &&
-                wbtcBrlPrice &&
-                React.createElement(
-                  "div",
-                  { className: "mb-3" },
-                  React.createElement(
-                    "div",
-                    { className: "card bg-light" },
-                    React.createElement(
-                      "div",
-                      { className: "card-body" },
-                      React.createElement(
-                        "h6",
-                        { className: "card-title" },
-                        "Resumo da Venda"
-                      ),
-                      React.createElement(
-                        "p",
-                        { className: "mb-1" },
-                        "Quantidade: ",
-                        parseFloat(valorVenda).toFixed(8),
-                        " WBTC"
-                      ),
-                      React.createElement(
-                        "p",
-                        { className: "mb-1" },
-                        "Valor a receber: R$ ",
-                        (parseFloat(valorVenda) * wbtcBrlPrice).toFixed(2)
-                      ),
-                      React.createElement(
-                        "p",
-                        { className: "mt-2 text-success" },
-                        React.createElement(
-                          "small",
-                          null,
-                          "+ 1 ponto será adicionado à sua conta"
-                        )
-                      )
-                    )
-                  )
-                )
-            ),
-            React.createElement(
-              "div",
-              { className: "modal-footer" },
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  className: "btn btn-secondary",
-                  onClick: handleCloseSellModal,
-                  disabled: sellLoading,
-                },
-                "Cancelar"
-              ),
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  className: "btn btn-warning",
-                  onClick: handleProcessarVenda,
-                  disabled:
+      {showSellModal && (
+        <div className="modal fade show" style={{ display: "block" }} tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Vender WBTC</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={handleCloseSellModal}
+                  disabled={sellLoading}
+                ></button>
+              </div>
+              <div className="modal-body">
+                {sellMensagem && (
+                  <div className={`alert alert-${sellMensagem.tipo === "sucesso" ? "success" : "danger"}`}>
+                    {sellMensagem.texto}
+                  </div>
+                )}
+                <div className="mb-3">
+                  <label htmlFor="valorVenda" className="form-label">Quantidade de WBTC a Vender</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="valorVenda"
+                    placeholder="Digite a quantidade"
+                    value={valorVenda}
+                    onChange={handleValorVendaChange}
+                    disabled={sellLoading}
+                    min="0.00000001"
+                    step="0.00000001"
+                    autoFocus
+                  />
+                  <small className="text-muted">Saldo disponível: {(userData.wbtcBalance || 0).toFixed(8)} WBTC</small>
+                </div>
+                {valorVenda && !isNaN(parseFloat(valorVenda)) && wbtcBrlPrice && (
+                  <div className="mb-3">
+                    <div className="card bg-light">
+                      <div className="card-body">
+                        <h6 className="card-title">Resumo da Venda</h6>
+                        <p className="mb-1">Quantidade: {parseFloat(valorVenda).toFixed(8)} WBTC</p>
+                        <p className="mb-1">Valor a receber: R$ {(parseFloat(valorVenda) * wbtcBrlPrice).toFixed(2)}</p>
+                        <p className="mt-2 text-success">
+                          <small>+ 1 ponto será adicionado à sua conta</small>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleCloseSellModal}
+                  disabled={sellLoading}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-warning"
+                  onClick={handleProcessarVenda}
+                  disabled={
                     sellLoading ||
                     !valorVenda ||
                     isNaN(parseFloat(valorVenda)) ||
                     parseFloat(valorVenda) <= 0 ||
-                    parseFloat(valorVenda) > (userData.wbtcBalance || 0),
-                },
-                sellLoading
-                  ? React.createElement(
-                      React.Fragment,
-                      null,
-                      React.createElement(
-                        "span",
-                        {
-                          className: "spinner-border spinner-border-sm me-2",
-                          role: "status",
-                          "aria-hidden": "true",
-                        }
-                      ),
-                      "Processando..."
-                    )
-                  : "Confirmar Venda"
-              )
-            )
-          )
-        ),
-        React.createElement("div", {
-          className: "modal-backdrop fade show",
-          onClick: !sellLoading ? handleCloseSellModal : null,
-          style: { zIndex: -1 },
-        })
-      )
+                    parseFloat(valorVenda) > (userData.wbtcBalance || 0)
+                  }
+                >
+                  {sellLoading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Processando...
+                    </>
+                  ) : (
+                    "Confirmar Venda"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            className="modal-backdrop fade show"
+            onClick={!sellLoading ? handleCloseSellModal : null}
+            style={{ zIndex: -1 }}
+          ></div>
+        </div>
+      )}
+    </div>
   );
 }
 
