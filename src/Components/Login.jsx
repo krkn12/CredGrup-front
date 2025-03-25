@@ -1,3 +1,4 @@
+// [Código já fornecido anteriormente, mantido igual]
 import React, { useState } from "react";
 import { PersonFill, ArrowClockwise } from "react-bootstrap-icons";
 import { useNavigate } from "react-router-dom";
@@ -45,6 +46,10 @@ function Login({ onLogin }) {
 
       const { token, user } = response.data;
 
+      if (!token || !user || !user._id) {
+        throw new Error("Resposta inválida da API: Token ou dados do usuário ausentes");
+      }
+
       if (rememberMe) {
         localStorage.setItem("token", token);
       } else {
@@ -53,12 +58,12 @@ function Login({ onLogin }) {
 
       const loggedUser = {
         id: user._id,
-        name: user.name,
+        name: user.name || "Usuário",
         email: user.email,
         saldoReais: user.saldoReais || 0,
         wbtcBalance: user.wbtcBalance || 0,
         pontos: user.pontos || 0,
-        walletAddress: user.walletAddress || "", // Não existe no modelo, mantido como vazio
+        walletAddress: user.walletAddress || "",
         isAdmin: user.isAdmin || false,
       };
       localStorage.setItem("currentUser", JSON.stringify(loggedUser));
