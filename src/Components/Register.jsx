@@ -61,9 +61,8 @@ function Register({ onRegisterSuccess }) {
         password: formData.password,
       });
 
-      // O back-end retorna o usuário completo com status 201
       if (response.status === 201) {
-        const { name, email } = response.data; // Pega alguns dados do usuário retornado
+        const { name } = response.data; // Backend retorna o usuário criado
         setSuccessMessage(`Cadastro realizado com sucesso para ${name}! Redirecionando para o login...`);
         setFormData({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
         if (onRegisterSuccess) onRegisterSuccess();
@@ -77,7 +76,7 @@ function Register({ onRegisterSuccess }) {
     } catch (error) {
       console.error('Erro ao registrar:', error);
       setErrors({
-        submit: error.response?.data?.message || 'Erro ao registrar. Tente novamente.',
+        submit: error.response?.data?.message || 'Erro ao registrar. Email pode já estar em uso.',
       });
     } finally {
       setIsLoading(false);

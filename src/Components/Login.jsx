@@ -1,4 +1,3 @@
-// [Código já fornecido anteriormente, mantido igual]
 import React, { useState } from "react";
 import { PersonFill, ArrowClockwise } from "react-bootstrap-icons";
 import { useNavigate } from "react-router-dom";
@@ -79,7 +78,7 @@ function Login({ onLogin }) {
     } catch (error) {
       console.error("Erro ao fazer login:", error);
       setErrors({
-        auth: error.response?.data?.message || "Erro ao fazer login. Verifique suas credenciais.",
+        auth: error.response?.data?.message || "Credenciais inválidas ou erro no servidor.",
       });
     } finally {
       setIsLoading(false);
@@ -102,7 +101,7 @@ function Login({ onLogin }) {
     }
 
     try {
-      // Placeholder: substituir por chamada real à API de recuperação, se existir
+      // Placeholder: backend não tem rota de recuperação ainda
       setRecoveryMessage({
         type: "success",
         text: "Instruções de recuperação enviadas para seu email.",
