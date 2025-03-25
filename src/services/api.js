@@ -10,6 +10,8 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    console.log("URL da requisição:", config.url);
+    console.log("Token enviado:", token); // Verifique se o token está aqui
     if (token && typeof token === "string" && token.trim() !== "") {
       config.headers.Authorization = `Bearer ${token}`;
       console.log("[API] Token adicionado à requisição:", token.slice(0, 10) + "...");

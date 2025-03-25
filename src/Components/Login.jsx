@@ -35,26 +35,29 @@ function Login({ onLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
+  
     setIsLoading(true);
     try {
       const response = await api.post("/users/login", {
         email: formData.email,
         password: formData.password,
       });
-
+  
       const { token, user } = response.data;
-
+      console.log("Resposta do login:", { token, user });
+  
       if (!token || !user || !user._id) {
         throw new Error("Resposta inválida da API: Token ou dados do usuário ausentes");
       }
-
+  
       if (rememberMe) {
         localStorage.setItem("token", token);
+        console.log("Token armazenado no localStorage:", localStorage.getItem("token"));
       } else {
         sessionStorage.setItem("token", token);
+        console.log("Token armazenado no sessionStorage:", sessionStorage.getItem("token"));
       }
-
+  
       const loggedUser = {
         id: user._id,
         name: user.name || "Usuário",
@@ -66,17 +69,18 @@ function Login({ onLogin }) {
         isAdmin: user.isAdmin || false,
       };
       localStorage.setItem("currentUser", JSON.stringify(loggedUser));
-
+      console.log("Usuário armazenado:", loggedUser);
+  
       setSuccessMessage("Login realizado com sucesso! Redirecionando...");
       if (onLogin) onLogin(loggedUser);
-
+  
       setTimeout(() => {
         setSuccessMessage("");
         const redirectTo = user.isAdmin ? "/admin" : "/user";
         navigate(redirectTo, { replace: true });
       }, 1000);
     } catch (error) {
-      console.error("Erro ao fazer login:", error);
+      console.error("Erro ao fazer login:", error.response?.data || error.message);
       setErrors({
         auth: error.response?.data?.message || "Credenciais inválidas ou erro no servidor.",
       });
