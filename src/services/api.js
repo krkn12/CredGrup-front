@@ -10,17 +10,17 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-    if (token && typeof token === "string") {
+    if (token && typeof token === "string" && token.trim() !== "") {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log("Token adicionado à requisição:", token);
+      console.log("[API] Token adicionado à requisição:", token.slice(0, 10) + "...");
     } else {
       delete config.headers.Authorization;
-      console.log("Nenhum token válido encontrado");
+      console.log("[API] Nenhum token válido encontrado");
     }
     return config;
   },
   (error) => {
-    console.error("Erro no interceptor de requisição:", error);
+    console.error("[API] Erro no interceptor de requisição:", error);
     return Promise.reject(error);
   }
 );
@@ -28,9 +28,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error("Erro na resposta da API:", error.response?.data || error.message);
+    console.error("[API] Erro na resposta:", error.response?.data || error.message);
     if (error.response?.status === 401) {
-      console.log("Erro 401: Usuário não autenticado, redirecionando...");
+      console.log("[API] Erro 401 - Redirecionando para login");
       localStorage.clear();
       sessionStorage.clear();
       window.location.href = "/auth";
