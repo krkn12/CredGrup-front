@@ -1,23 +1,46 @@
 import api from "../services/api";
 
-export function startPriceUpdates(setWbtcBrlPrice, intervalTime = 10000) {
-  const fetchPrice = async () => {
-    try {
-      const response = await api.get("/market/wbtc-price");
-      setWbtcBrlPrice(response.data.price);
-    } catch (error) {
-      console.error("Erro ao atualizar preço do WBTC:", error);
-      setWbtcBrlPrice(null); // Ou um valor padrão, se preferir
-    }
-  };
-
-  fetchPrice(); // Primeira chamada imediata
-  const intervalId = setInterval(fetchPrice, intervalTime);
-  return intervalId;
+export function calcularPontosVenda(valorWbtc) {
+  return Math.floor(parseFloat(valorWbtc) * 10); // 1 ponto por 0.1 WBTC vendido
 }
 
-export function stopPriceUpdates(intervalId) {
-  if (intervalId) {
-    clearInterval(intervalId);
+export async function processarVendaWBTC(wbtcToSell, callbacks = {}) {
+  const { onInicio, onSucesso, onErro, onFim } = callbacks;
+
+  try {
+    if (onInicio) onInicio();
+
+    const wbtcFloat = parseFloat(wbtcToSell);
+    if (!wbtcFloat || wbtcFloat <= 0) throw new Error("Quantidade inválida de WBTC");
+
+    const response = await api.post("/user/sell-wbtc", { wbtcAmount: wbtcFloat });
+
+    const { transaction, updatedUser } = response.data;
+    const pontos = calcularPontosVenda(wbtcFloat);
+
+    const novaTransacao = {
+      id: transaction._id,
+      description: `Venda de ${wbtcFloat.toFixed(8)} WBTC`,
+      amount: transaction.amount,
+      date: new Date(),
+      cashback: 0,
+      status: "Concluído",
+      tipo: "venda",
+      taxa: transaction.taxa || 0,
+    };
+
+    if (onSucesso) onSucesso({ transaction: novaTransacao, updatedUser, pontos });
+    return { transaction: novaTransacao, updatedUser };
+  } catch (error) {
+    const errorMessage = error.response?.data?.error || error.message || "Erro ao processar venda";
+    if (onErro) onErro(errorMessage);
+    if (error.response?.status === 401) {
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = "/auth";
+    }
+    throw error;
+  } finally {
+    if (onFim) onFim();
   }
 }
