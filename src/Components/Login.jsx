@@ -43,7 +43,7 @@ function Login({ onLogin }) {
         password: formData.password,
       });
 
-      const { token, id, name, email, saldoReais, wbtcBalance, pontos, walletAddress, isAdmin } = response.data;
+      const { token, user } = response.data;
 
       if (rememberMe) {
         localStorage.setItem("token", token);
@@ -52,14 +52,14 @@ function Login({ onLogin }) {
       }
 
       const loggedUser = {
-        id,
-        name,
-        email,
-        saldoReais: saldoReais || 0,
-        wbtcBalance: wbtcBalance || 0,
-        pontos: pontos || 0,
-        walletAddress: walletAddress || "",
-        isAdmin: isAdmin || false,
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        saldoReais: user.saldoReais || 0,
+        wbtcBalance: user.wbtcBalance || 0,
+        pontos: user.pontos || 0,
+        walletAddress: user.walletAddress || "", // Não existe no modelo, mantido como vazio
+        isAdmin: user.isAdmin || false,
       };
       localStorage.setItem("currentUser", JSON.stringify(loggedUser));
 
@@ -68,13 +68,13 @@ function Login({ onLogin }) {
 
       setTimeout(() => {
         setSuccessMessage("");
-        const redirectTo = isAdmin ? "/admin" : "/user";
+        const redirectTo = user.isAdmin ? "/admin" : "/user";
         navigate(redirectTo, { replace: true });
       }, 1000);
     } catch (error) {
       console.error("Erro ao fazer login:", error);
       setErrors({
-        auth: error.response?.data?.error || "Erro ao fazer login. Verifique suas credenciais.",
+        auth: error.response?.data?.message || "Erro ao fazer login. Verifique suas credenciais.",
       });
     } finally {
       setIsLoading(false);
@@ -97,7 +97,7 @@ function Login({ onLogin }) {
     }
 
     try {
-      // Aqui você pode adicionar uma chamada real à API para recuperação de senha, se existir
+      // Placeholder: substituir por chamada real à API de recuperação, se existir
       setRecoveryMessage({
         type: "success",
         text: "Instruções de recuperação enviadas para seu email.",
@@ -196,10 +196,22 @@ function Login({ onLogin }) {
             />
             {errors.password && <div className="invalid-feedback">{errors.password}</div>}
           </div>
-          <div className="mb-3 text-end">
-            <a href="#" className="text-decoration-none" onClick={toggleRecoveryForm}>
-              Esqueceu sua senha?
-            </a>
+          <div className="mb-3 form-check">
+            <input
+              type="checkbox"
+              className="form-check-input"
+              id="rememberMe"
+              checked={rememberMe}
+              onChange={handleRememberMeChange}
+            />
+            <label className="form-check-label" htmlFor="rememberMe">
+              Lembrar-me
+            </label>
+            <div className="text-end">
+              <a href="#" className="text-decoration-none" onClick={toggleRecoveryForm}>
+                Esqueceu sua senha?
+              </a>
+            </div>
           </div>
           <button type="submit" className="btn btn-warning w-100" disabled={isLoading}>
             {isLoading ? (

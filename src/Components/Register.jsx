@@ -61,18 +61,23 @@ function Register({ onRegisterSuccess }) {
         password: formData.password,
       });
 
-      if (response.status === 201 && response.data.message === 'Usuário registrado com sucesso') {
-        setSuccessMessage('Cadastro realizado com sucesso! Redirecionando para o login...');
+      // O back-end retorna o usuário completo com status 201
+      if (response.status === 201) {
+        const { name, email } = response.data; // Pega alguns dados do usuário retornado
+        setSuccessMessage(`Cadastro realizado com sucesso para ${name}! Redirecionando para o login...`);
         setFormData({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
         if (onRegisterSuccess) onRegisterSuccess();
-        setTimeout(() => navigate('/auth', { replace: true }), 2000);
+        setTimeout(() => {
+          setSuccessMessage('');
+          navigate('/auth', { replace: true });
+        }, 2000);
       } else {
         throw new Error('Resposta inesperada do servidor');
       }
     } catch (error) {
       console.error('Erro ao registrar:', error);
       setErrors({
-        submit: error.response?.data?.error || 'Erro ao registrar. Tente novamente.',
+        submit: error.response?.data?.message || 'Erro ao registrar. Tente novamente.',
       });
     } finally {
       setIsLoading(false);
