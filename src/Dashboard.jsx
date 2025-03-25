@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from "./Pages/Navbar";
 import Inicio from "./Pages/Inicio";
@@ -19,6 +19,7 @@ function Dashboard({ currentUser, onLogin, onLogout }) {
   // Componente para proteger rotas de usuários autenticados
   const RequireAuth = ({ children }) => {
     if (!currentUser) {
+      console.log("Usuário não autenticado, redirecionando para /auth");
       return <Navigate to="/auth" state={{ from: location }} replace />;
     }
     return children;
@@ -27,13 +28,20 @@ function Dashboard({ currentUser, onLogin, onLogout }) {
   // Componente para proteger rotas de administradores
   const RequireAdmin = ({ children }) => {
     if (!currentUser) {
+      console.log("Usuário não autenticado, redirecionando para /auth");
       return <Navigate to="/auth" state={{ from: location }} replace />;
     }
     if (!currentUser.isAdmin) {
-      return <Navigate to="/user" replace />; // Redireciona para a página de usuário se não for admin
+      console.log("Usuário não é admin, redirecionando para /user");
+      return <Navigate to="/user" replace />;
     }
     return children;
   };
+
+  // Log para verificar o estado ao renderizar
+  useEffect(() => {
+    console.log("Dashboard renderizado com currentUser:", currentUser);
+  }, [currentUser]);
 
   return (
     <div>
@@ -47,7 +55,13 @@ function Dashboard({ currentUser, onLogin, onLogout }) {
           <Route path="/" element={<Inicio currentUser={currentUser} />} />
           <Route 
             path="/auth" 
-            element={currentUser ? <Navigate to={currentUser.isAdmin ? "/admin" : "/user"} replace /> : <Auth onLogin={onLogin} />} 
+            element={
+              currentUser ? (
+                <Navigate to={currentUser.isAdmin ? "/admin" : "/user"} replace />
+              ) : (
+                <Auth onLogin={onLogin} />
+              )
+            } 
           />
           <Route 
             path="/user" 
