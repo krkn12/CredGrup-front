@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://158.69.35.122:5000/api", // Ajustado para VPS
+  baseURL: "https://credgrup.click/api", // HTTPS agora
   headers: {
     "Content-Type": "application/json",
   },
