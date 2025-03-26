@@ -11,7 +11,7 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     console.log("URL da requisição:", config.url);
-    console.log("Token enviado:", token); // Verifique se o token está aqui
+    console.log("Token enviado:", token);
     if (token && typeof token === "string" && token.trim() !== "") {
       config.headers.Authorization = `Bearer ${token}`;
       console.log("[API] Token adicionado à requisição:", token.slice(0, 10) + "...");
@@ -21,12 +21,8 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    console.error("[API] Erro no interceptor de requisição:", error);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
-
 api.interceptors.response.use(
   (response) => response,
   (error) => {
