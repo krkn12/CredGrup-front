@@ -7,7 +7,6 @@ function Dashboard() {
   const [walletData, setWalletData] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview'); // Controle de abas
 
   // Função para buscar os dados da carteira
   const fetchWalletData = async () => {
@@ -47,14 +46,9 @@ function Dashboard() {
       return;
     }
     try {
-      // Simulação de chamada ao backend
       const amountToSell = prompt('Quantos WBTC você deseja vender?');
       if (amountToSell && !isNaN(amountToSell) && amountToSell > 0) {
         alert(`Venda de ${amountToSell} WBTC iniciada! (Funcionalidade a ser implementada no backend)`);
-        // Exemplo de chamada real ao backend (descomentar e ajustar):
-        // await axios.post('https://credgrup.click/api/wallet/sell-wbtc', { amount: amountToSell }, {
-        //   headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        // });
         fetchWalletData(); // Atualiza os dados após a venda
       }
     } catch (error) {
@@ -85,95 +79,75 @@ function Dashboard() {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       ) : walletData ? (
-        <div className="space-y-6">
-          {/* Navegação por abas */}
-          <div className="flex space-x-4 border-b">
-            <button
-              className={`pb-2 px-4 ${activeTab === 'overview' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600'}`}
-              onClick={() => setActiveTab('overview')}
-            >
-              Visão Geral
-            </button>
-            <button
-              className={`pb-2 px-4 ${activeTab === 'wbtc' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600'}`}
-              onClick={() => setActiveTab('wbtc')}
-            >
-              Carteira WBTC
-            </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Card de Saldo em Reais */}
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-2xl font-semibold text-gray-700 mb-4">
+              Sua Carteira
+            </h2>
+            <div className="space-y-4">
+              <p className="text-lg">
+                <strong>Saldo em Reais (BRL):</strong>{' '}
+                <span className="text-green-600 font-bold">
+                  {formatBRL(walletData.wbtcBalance)}
+                </span>
+              </p>
+              <p className="text-sm text-gray-500">
+                (Baseado na cotação atual do WBTC)
+              </p>
+            </div>
           </div>
 
-          {/* Conteúdo das abas */}
-          {activeTab === 'overview' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white p-6 rounded-lg shadow-lg">
-                <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-                  Sua Carteira
-                </h2>
-                <div className="space-y-4">
-                  <p className="text-lg">
-                    <strong>Saldo em Reais (BRL):</strong>{' '}
-                    <span className="text-green-600 font-bold">
-                      {formatBRL(walletData.wbtcBalance)}
-                    </span>
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    (Baseado na cotação atual do WBTC)
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-lg shadow-lg">
-                <h2 className="text-xl font-semibold text-gray-700 mb-4">
-                  Detalhes Financeiros
-                </h2>
-                <div className="space-y-3">
-                  <p>
-                    <strong>Total Investido:</strong>{' '}
-                    {formatBRL(walletData.totalInvested)}
-                  </p>
-                  <p>
-                    <strong>Disponível para Empréstimo:</strong>{' '}
-                    {formatBRL(walletData.loanAvailable)}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    <strong>Última Atualização:</strong>{' '}
-                    {new Date(walletData.lastUpdated).toLocaleString('pt-BR', {
-                      dateStyle: 'short',
-                      timeStyle: 'medium',
-                    })}
-                  </p>
-                </div>
-              </div>
+          {/* Card de Detalhes Financeiros */}
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-semibold text-gray-700 mb-4">
+              Detalhes Financeiros
+            </h2>
+            <div className="space-y-3">
+              <p>
+                <strong>Total Investido:</strong>{' '}
+                {formatBRL(walletData.totalInvested)}
+              </p>
+              <p>
+                <strong>Disponível para Empréstimo:</strong>{' '}
+                {formatBRL(walletData.loanAvailable)}
+              </p>
+              <p className="text-sm text-gray-500">
+                <strong>Última Atualização:</strong>{' '}
+                {new Date(walletData.lastUpdated).toLocaleString('pt-BR', {
+                  dateStyle: 'short',
+                  timeStyle: 'medium',
+                })}
+              </p>
             </div>
-          )}
+          </div>
 
-          {activeTab === 'wbtc' && (
-            <div className="bg-white p-6 rounded-lg shadow-lg">
-              <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-                Carteira WBTC
-              </h2>
-              <div className="space-y-4">
-                <p className="text-lg">
-                  <strong>Saldo WBTC:</strong>{' '}
-                  <span className="font-bold">
-                    {(walletData.wbtcBalance / (walletData.wbtcBalance ? walletData.wbtcBalance : 1)).toFixed(8)} WBTC
-                  </span>
-                </p>
-                <p className="text-lg">
-                  <strong>Equivalente em Reais:</strong>{' '}
-                  <span className="text-green-600 font-bold">
-                    {formatBRL(walletData.wbtcBalance)}
-                  </span>
-                </p>
-                <button
-                  onClick={handleSellWBTC}
-                  className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
-                >
-                  Vender WBTC
-                </button>
-              </div>
+          {/* Card de Carteira WBTC */}
+          <div className="bg-white p-6 rounded-lg shadow-lg md:col-span-2">
+            <h2 className="text-xl font-semibold text-gray-700 mb-4">
+              Carteira WBTC
+            </h2>
+            <div className="space-y-3">
+              <p className="text-lg">
+                <strong>Saldo WBTC:</strong>{' '}
+                <span className="font-bold">
+                  {(walletData.wbtcBalance / (walletData.wbtcBalance ? walletData.wbtcBalance : 1)).toFixed(8)} WBTC
+                </span>
+              </p>
+              <p className="text-lg">
+                <strong>Equivalente em Reais:</strong>{' '}
+                <span className="text-green-600 font-bold">
+                  {formatBRL(walletData.wbtcBalance)}
+                </span>
+              </p>
+              <button
+                onClick={handleSellWBTC}
+                className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+              >
+                Vender WBTC
+              </button>
             </div>
-          )}
+          </div>
         </div>
       ) : (
         <p className="text-gray-600">Nenhum dado disponível no momento.</p>
