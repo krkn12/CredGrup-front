@@ -11,6 +11,8 @@ import Payments from './pages/Payments';
 import Transactions from './pages/Transactions';
 import Loans from './pages/Loans';
 import Investments from './pages/Investments';
+import Profile from './pages/Profile';
+import KYC from './pages/KYC';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminConfig from './pages/AdminConfig';
 
@@ -29,6 +31,8 @@ function App() {
           <Route path="/transactions" element={<PrivateRoute><Transactions /></PrivateRoute>} />
           <Route path="/loans" element={<PrivateRoute><Loans /></PrivateRoute>} />
           <Route path="/investments" element={<PrivateRoute><Investments /></PrivateRoute>} />
+          <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+          <Route path="/kyc" element={<PrivateRoute><KYC /></PrivateRoute>} />
           <Route path="/admin" element={<PrivateRoute requiresAdmin><AdminDashboard /></PrivateRoute>} />
           <Route path="/admin/config" element={<PrivateRoute requiresAdmin><AdminConfig /></PrivateRoute>} />
         </Routes>

@@ -1,31 +1,43 @@
-import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../contexts/AuthContext';
 
 function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
-    <nav className="bg-blue-600 text-white p-4">
-      <div className="container mx-auto flex justify-between items-center">
-        <Link to="/" className="text-xl font-bold">CredGrup Fintech</Link>
-        {user ? (
-          <div className="space-x-4">
-            <Link to="/dashboard">Dashboard</Link>
-            <Link to="/deposits">Depósitos</Link>
-            <Link to="/payments">Pagamentos</Link>
-            <Link to="/transactions">Transações</Link>
-            <Link to="/loans">Empréstimos</Link>
-            <Link to="/investments">Investimentos</Link>
-            {user.isAdmin && <Link to="/admin">Admin</Link>}
-            <button onClick={logout} className="bg-red-500 px-3 py-1 rounded">Sair</button>
-          </div>
-        ) : (
-          <div className="space-x-4">
-            <Link to="/login">Login</Link>
-            <Link to="/register">Cadastro</Link>
-          </div>
-        )}
-      </div>
+    <nav style={{ padding: '1rem', background: '#333', color: '#fff' }}>
+      <Link to="/" style={{ color: '#fff', marginRight: '1rem' }}>Home</Link>
+      {user ? (
+        <>
+          <Link to="/dashboard" style={{ color: '#fff', marginRight: '1rem' }}>Dashboard</Link>
+          <Link to="/deposits" style={{ color: '#fff', marginRight: '1rem' }}>Depósitos</Link>
+          <Link to="/payments" style={{ color: '#fff', marginRight: '1rem' }}>Pagamentos</Link>
+          <Link to="/transactions" style={{ color: '#fff', marginRight: '1rem' }}>Transações</Link>
+          <Link to="/loans" style={{ color: '#fff', marginRight: '1rem' }}>Empréstimos</Link>
+          <Link to="/investments" style={{ color: '#fff', marginRight: '1rem' }}>Investimentos</Link>
+          <Link to="/profile" style={{ color: '#fff', marginRight: '1rem' }}>Perfil</Link>
+          <Link to="/kyc" style={{ color: '#fff', marginRight: '1rem' }}>KYC</Link>
+          {user.isAdmin && (
+            <>
+              <Link to="/admin" style={{ color: '#fff', marginRight: '1rem' }}>Admin</Link>
+              <Link to="/admin/config" style={{ color: '#fff', marginRight: '1rem' }}>Configurações</Link>
+            </>
+          )}
+          <button onClick={handleLogout} style={{ color: '#fff', background: 'none', border: 'none' }}>Sair</button>
+        </>
+      ) : (
+        <>
+          <Link to="/login" style={{ color: '#fff', marginRight: '1rem' }}>Login</Link>
+          <Link to="/register" style={{ color: '#fff' }}>Registrar</Link>
+        </>
+      )}
     </nav>
   );
 }

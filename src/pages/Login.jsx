@@ -1,32 +1,33 @@
-import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../contexts/AuthContext';
 
 function Login() {
+  const { login } = useContext(AuthContext);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const { login } = useAuth();
+  const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = await login(email, password);
-    if (success) navigate('/dashboard'); // Alterado de '/' para '/dashboard'
-    else setError('Credenciais inválidas');
+    try {
+      await login(email, password);
+      navigate('/dashboard');
+    } catch (error) {
+      setMessage('Erro ao fazer login: ' + error.response?.data?.message);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow-md w-96">
-        <h2 className="text-2xl mb-4 text-center">Login</h2>
-        {error && <p className="text-red-500 mb-4">{error}</p>}
+    <div style={{ padding: '2rem' }}>
+      <h1>Login</h1>
+      <form onSubmit={handleSubmit}>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
-          className="w-full p-2 mb-4 border rounded"
           required
         />
         <input
@@ -34,11 +35,11 @@ function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Senha"
-          className="w-full p-2 mb-4 border rounded"
           required
         />
-        <button type="submit" className="w-full p-2 bg-blue-500 text-white rounded">Entrar</button>
+        <button type="submit">Entrar</button>
       </form>
+      {message && <p>{message}</p>}
     </div>
   );
 }
