@@ -14,7 +14,6 @@ function Transactions() {
         setTransactions(res.data);
       } catch (err) {
         setError('Erro ao carregar transações');
-        console.error(err);
       }
     };
     fetchTransactions();
@@ -29,7 +28,7 @@ function Transactions() {
         {transactions.length > 0 ? (
           <ul>
             {transactions.map((t) => (
-              <li key={t.id} className="py-2">
+              <li key={t.id}>
                 Tipo: {t.type} - Valor: {t.amount} - Data: {new Date(t.createdAt).toLocaleString()}
               </li>
             ))}

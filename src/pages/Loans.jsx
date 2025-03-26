@@ -15,7 +15,6 @@ function Loans() {
         setLoans(res.data);
       } catch (err) {
         setError('Erro ao carregar empréstimos');
-        console.error(err);
       }
     };
     fetchLoans();
@@ -34,7 +33,6 @@ function Loans() {
       setError('');
     } catch (err) {
       setError('Erro ao solicitar empréstimo');
-      console.error(err);
     }
   };
 
@@ -51,16 +49,16 @@ function Loans() {
           className="p-2 border rounded mr-2"
           required
         />
-        <button type="submit" className="p-2 bg-blue-500 text-white rounded">
-          Solicitar Empréstimo
-        </button>
+        <button type="submit" className="p-2 bg-blue-500 text-white rounded">Solicitar</button>
       </form>
       <div className="bg-white p-4 rounded shadow">
         <h2 className="text-xl mb-2">Histórico de Empréstimos</h2>
         {loans.length > 0 ? (
           <ul>
             {loans.map((l) => (
-              <li key={l.id}>Valor: {l.amount} - Data: {new Date(l.createdAt).toLocaleString()}</li>
+              <li key={l.id}>
+                Valor: {l.amount} - Status: {l.status} - Data: {new Date(l.createdAt).toLocaleString()}
+              </li>
             ))}
           </ul>
         ) : (

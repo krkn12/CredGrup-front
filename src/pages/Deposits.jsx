@@ -15,7 +15,6 @@ function Deposits() {
         setDeposits(res.data);
       } catch (err) {
         setError('Erro ao carregar depósitos');
-        console.error(err);
       }
     };
     fetchDeposits();
@@ -34,7 +33,6 @@ function Deposits() {
       setError('');
     } catch (err) {
       setError('Erro ao fazer depósito');
-      console.error(err);
     }
   };
 
@@ -51,16 +49,16 @@ function Deposits() {
           className="p-2 border rounded mr-2"
           required
         />
-        <button type="submit" className="p-2 bg-blue-500 text-white rounded">
-          Depositar
-        </button>
+        <button type="submit" className="p-2 bg-blue-500 text-white rounded">Depositar</button>
       </form>
       <div className="bg-white p-4 rounded shadow">
         <h2 className="text-xl mb-2">Histórico de Depósitos</h2>
         {deposits.length > 0 ? (
           <ul>
             {deposits.map((d) => (
-              <li key={d.id}>Valor: {d.amount} - Data: {new Date(d.createdAt).toLocaleString()}</li>
+              <li key={d.id}>
+                Valor: {d.amount} - Status: {d.status} - Data: {new Date(d.createdAt).toLocaleString()}
+              </li>
             ))}
           </ul>
         ) : (

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 
 function AdminConfig() {
-  const [config, setConfig] = useState({ loanInterestRate: 0, investmentInterestRate: 0 });
+  const [config, setConfig] = useState({ loanInterestRate: 0, investmentInterestRate: 0, btcRewardRate: 0.0002 });
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -12,8 +12,8 @@ function AdminConfig() {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         setConfig(res.data);
-      } catch (error) {
-        console.error('Error fetching config:', error);
+      } catch (err) {
+        setError('Erro ao carregar configuração');
       }
     };
     fetchConfig();
@@ -29,9 +29,8 @@ function AdminConfig() {
       );
       setConfig(res.data);
       setError('');
-    } catch (error) {
-      setError('Erro ao atualizar configuração');
-      console.error('Error updating config:', error);
+    } catch (err) {
+      setError('Erro ao salvar configuração');
     }
   };
 
@@ -62,9 +61,18 @@ function AdminConfig() {
             min="0"
           />
         </div>
-        <button type="submit" className="p-2 bg-blue-500 text-white rounded">
-          Salvar
-        </button>
+        <div className="mb-4">
+          <label className="block mb-2">Taxa de Ganho em BTC por Pagamento (%)</label>
+          <input
+            type="number"
+            value={config.btcRewardRate * 100}
+            onChange={(e) => setConfig({ ...config, btcRewardRate: e.target.value / 100 })}
+            className="w-full p-2 border rounded"
+            step="0.01"
+            min="0"
+          />
+        </div>
+        <button type="submit" className="p-2 bg-blue-500 text-white rounded">Salvar</button>
       </form>
     </div>
   );

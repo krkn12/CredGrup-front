@@ -15,7 +15,6 @@ function Investments() {
         setInvestments(res.data);
       } catch (err) {
         setError('Erro ao carregar investimentos');
-        console.error(err);
       }
     };
     fetchInvestments();
@@ -34,7 +33,6 @@ function Investments() {
       setError('');
     } catch (err) {
       setError('Erro ao fazer investimento');
-      console.error(err);
     }
   };
 
@@ -51,16 +49,16 @@ function Investments() {
           className="p-2 border rounded mr-2"
           required
         />
-        <button type="submit" className="p-2 bg-blue-500 text-white rounded">
-          Investir
-        </button>
+        <button type="submit" className="p-2 bg-blue-500 text-white rounded">Investir</button>
       </form>
       <div className="bg-white p-4 rounded shadow">
         <h2 className="text-xl mb-2">Histórico de Investimentos</h2>
         {investments.length > 0 ? (
           <ul>
             {investments.map((i) => (
-              <li key={i.id}>Valor: {i.amount} - Data: {new Date(i.createdAt).toLocaleString()}</li>
+              <li key={i.id}>
+                Valor: {i.amount} - Status: {i.status} - Data: {new Date(i.createdAt).toLocaleString()}
+              </li>
             ))}
           </ul>
         ) : (
