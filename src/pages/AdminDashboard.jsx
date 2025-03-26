@@ -21,7 +21,7 @@ function AdminDashboard() {
           investments: invRes.data.filter(i => i.status === 'pending'),
         });
       } catch (err) {
-        setError('Erro ao carregar ações pendentes');
+        setError(err.response?.data?.message || 'Erro ao carregar ações pendentes');
       }
     };
     fetchPending();
@@ -36,10 +36,11 @@ function AdminDashboard() {
       );
       setPendingActions(prev => ({
         ...prev,
-        [type]: prev[type].filter(item => item.id !== id),
+        [type]: prev[type].filter(item => item._id !== id),
       }));
+      setError('');
     } catch (err) {
-      setError(`Erro ao ${action} ${type}`);
+      setError(err.response?.data?.message || `Erro ao ${action} ${type}`);
     }
   };
 
@@ -64,11 +65,11 @@ function Section({ title, items, type, handleAction }) {
       {items.length > 0 ? (
         <ul>
           {items.map(item => (
-            <li key={item.id} className="flex justify-between items-center py-2">
+            <li key={item._id} className="flex justify-between items-center py-2">
               <span>Valor: {item.amount} - {item.description || ''} - Data: {new Date(item.createdAt).toLocaleString()}</span>
               <div>
-                <button onClick={() => handleAction(type, item.id, 'approve')} className="bg-green-500 text-white px-2 py-1 rounded mr-2">Aprovar</button>
-                <button onClick={() => handleAction(type, item.id, 'reject')} className="bg-red-500 text-white px-2 py-1 rounded">Rejeitar</button>
+                <button onClick={() => handleAction(type, item._id, 'approve')} className="bg-green-500 text-white px-2 py-1 rounded mr-2">Aprovar</button>
+                <button onClick={() => handleAction(type, item._id, 'reject')} className="bg-red-500 text-white px-2 py-1 rounded">Rejeitar</button>
               </div>
             </li>
           ))}

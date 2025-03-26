@@ -15,7 +15,7 @@ function Payments() {
         });
         setPayments(res.data);
       } catch (err) {
-        setError('Erro ao carregar pagamentos');
+        setError(err.response?.data?.message || 'Erro ao carregar pagamentos');
       }
     };
     fetchPayments();
@@ -34,7 +34,7 @@ function Payments() {
       setDescription('');
       setError('');
     } catch (err) {
-      setError('Erro ao fazer pagamento');
+      setError(err.response?.data?.message || 'Erro ao fazer pagamento');
     }
   };
 
@@ -66,8 +66,8 @@ function Payments() {
         {payments.length > 0 ? (
           <ul>
             {payments.map((p) => (
-              <li key={p.id}>
-                Valor: {p.amount} - Descrição: {p.description} - BTC Ganho: {p.btcReward || 'Pendente'} - Status: {p.status} - Data: {new Date(p.createdAt).toLocaleString()}
+              <li key={p._id}>
+                Valor: {p.amount} - Descrição: {p.description} - Status: {p.status} - Data: {new Date(p.createdAt).toLocaleString()}
               </li>
             ))}
           </ul>

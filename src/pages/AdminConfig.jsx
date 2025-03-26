@@ -13,7 +13,7 @@ function AdminConfig() {
         });
         setConfig(res.data);
       } catch (err) {
-        setError('Erro ao carregar configuração');
+        setError(err.response?.data?.message || 'Erro ao carregar configuração');
       }
     };
     fetchConfig();
@@ -30,7 +30,7 @@ function AdminConfig() {
       setConfig(res.data);
       setError('');
     } catch (err) {
-      setError('Erro ao salvar configuração');
+      setError(err.response?.data?.message || 'Erro ao salvar configuração');
     }
   };
 
