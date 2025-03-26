@@ -35,21 +35,21 @@ function Login({ onLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-  
+
     setIsLoading(true);
     try {
       const response = await api.post("/users/login", {
         email: formData.email,
         password: formData.password,
       });
-  
+
       const { token, user } = response.data;
       console.log("Resposta do login:", { token, user });
-  
+
       if (!token || !user || !user._id) {
         throw new Error("Resposta inválida da API: Token ou dados do usuário ausentes");
       }
-  
+
       if (rememberMe) {
         localStorage.setItem("token", token);
         console.log("Token armazenado no localStorage:", localStorage.getItem("token"));
@@ -57,7 +57,7 @@ function Login({ onLogin }) {
         sessionStorage.setItem("token", token);
         console.log("Token armazenado no sessionStorage:", sessionStorage.getItem("token"));
       }
-  
+
       const loggedUser = {
         id: user._id,
         name: user.name || "Usuário",
@@ -70,11 +70,19 @@ function Login({ onLogin }) {
       };
       localStorage.setItem("currentUser", JSON.stringify(loggedUser));
       console.log("Usuário armazenado:", loggedUser);
-  
+
       setSuccessMessage("Login realizado com sucesso! Redirecionando...");
       if (onLogin) onLogin(loggedUser);
-  
+
       setTimeout(() => {
+        const storedToken = localStorage.getItem("token") || sessionStorage.getItem("token");
+        console.log("Token antes do redirecionamento:", storedToken);
+        if (!storedToken) {
+          console.error("Token não encontrado antes do redirecionamento!");
+          setErrors({ auth: "Erro interno: Token não salvo corretamente." });
+          setIsLoading(false);
+          return;
+        }
         setSuccessMessage("");
         const redirectTo = user.isAdmin ? "/admin" : "/user";
         navigate(redirectTo, { replace: true });

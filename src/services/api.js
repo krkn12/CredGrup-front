@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://credgrup.click/api", // HTTPS agora
+  baseURL: "https://credgrup.click/api",
   headers: {
     "Content-Type": "application/json",
   },
@@ -23,6 +23,7 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {

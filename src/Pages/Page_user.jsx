@@ -104,12 +104,164 @@ function Page_user({ currentUser, onLogout }) {
       navigate("/auth", { replace: true });
       return;
     }
+
     console.log("Token atual no localStorage:", localStorage.getItem("token"));
     console.log("Token atual no sessionStorage:", sessionStorage.getItem("token"));
-    // ... resto do código
+
+    const intervalId = startPriceUpdates(setWbtcBrlPrice, 10000);
+    setPriceUpdateInterval(intervalId);
+
+    const fetchInitialData = async () => {
+      try {
+        const [
+          userResponse,
+          depositsResponse,
+          paymentsResponse,
+          loansResponse,
+          walletResponse,
+          investmentResponse,
+        ] = await Promise.all([
+          api.get("/users/me"),
+          api.get("/deposits/me"),
+          api.get("/payments/me"),
+          api.get("/loans/me"),
+          api.get("/wallet/data"),
+          api.get("/investments/me"),
+        ]);
+
+        const depositHistory = depositsResponse.data.map((deposit) => ({
+          _id: deposit._id,
+          description: `Depósito via ${deposit.metodoNome}`,
+          amount: deposit.valor,
+          date: new Date(deposit.createdAt),
+          cashback: 0,
+          status: deposit.status,
+          tipo: "deposito",
+        }));
+
+        const paymentHistory = paymentsResponse.data.map((payment) => ({
+          id: payment._id,
+          description: payment.descricaoPagamento,
+          amount: payment.valorPagamento,
+          date: new Date(payment.createdAt),
+          cashback: payment.cashback || 0,
+          status: payment.status,
+          tipo: "pagamento",
+          taxa: payment.taxa,
+        }));
+
+        const loanHistory = loansResponse.data.map((loan) => ({
+          _id: loan._id,
+          description: `Empréstimo de R$ ${loan.amount.toFixed(2)}`,
+          amount: loan.totalToRepay,
+          date: new Date(loan.createdAt),
+          cashback: 0,
+          status: loan.status === "active" ? "Ativo" : loan.status === "repaid" ? "Pago" : "Vencido",
+          tipo: "emprestimo",
+        }));
+
+        const allHistory = [...depositHistory, ...paymentHistory, ...loanHistory];
+        allHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        const investmentData = investmentResponse.data || { amount: 0 };
+
+        setUserData({
+          ...userResponse.data,
+          paymentHistory: allHistory,
+          investmentData,
+        });
+        setTotalPages(Math.ceil((allHistory.length || 1) / itemsPerPage));
+        setWalletData(walletResponse.data);
+        setWalletHistory(fetchWalletHistory(walletResponse.data.wbtcBalance));
+        setWalletLoading(false);
+      } catch (error) {
+        console.error("Erro ao carregar dados iniciais:", error);
+        if (error.response?.status === 401) {
+          onLogout();
+        }
+        navigate("/auth", { replace: true });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const checkForUpdates = async () => {
+      try {
+        const [
+          userResponse,
+          depositsResponse,
+          paymentsResponse,
+          loansResponse,
+          walletResponse,
+          investmentResponse,
+        ] = await Promise.all([
+          api.get("/users/me"),
+          api.get("/deposits/me"),
+          api.get("/payments/me"),
+          api.get("/loans/me"),
+          api.get("/wallet/data"),
+          api.get("/investments/me"),
+        ]);
+
+        const depositHistory = depositsResponse.data.map((deposit) => ({
+          _id: deposit._id,
+          description: `Depósito via ${deposit.metodoNome}`,
+          amount: deposit.valor,
+          date: new Date(deposit.createdAt),
+          cashback: 0,
+          status: deposit.status,
+          tipo: "deposito",
+        }));
+
+        const paymentHistory = paymentsResponse.data.map((payment) => ({
+          id: payment._id,
+          description: payment.descricaoPagamento,
+          amount: payment.valorPagamento,
+          date: new Date(payment.createdAt),
+          cashback: payment.cashback || 0,
+          status: payment.status,
+          tipo: "pagamento",
+          taxa: payment.taxa,
+        }));
+
+        const loanHistory = loansResponse.data.map((loan) => ({
+          _id: loan._id,
+          description: `Empréstimo de R$ ${loan.amount.toFixed(2)}`,
+          amount: loan.totalToRepay,
+          date: new Date(loan.createdAt),
+          cashback: 0,
+          status: loan.status === "active" ? "Ativo" : loan.status === "repaid" ? "Pago" : "Vencido",
+          tipo: "emprestimo",
+        }));
+
+        const allHistory = [...depositHistory, ...paymentHistory, ...loanHistory];
+        allHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        const investmentData = investmentResponse.data || { amount: 0 };
+
+        setUserData({
+          ...userResponse.data,
+          paymentHistory: allHistory,
+          investmentData,
+        });
+        setTotalPages(Math.ceil((allHistory.length || 1) / itemsPerPage));
+        setWalletData(walletResponse.data);
+        setWalletHistory(fetchWalletHistory(walletResponse.data.wbtcBalance));
+        setLastCheck(new Date().toISOString());
+      } catch (error) {
+        console.error("Erro ao verificar atualizações:", error);
+      }
+    };
+
+    fetchInitialData();
+    const updateIntervalId = setInterval(checkForUpdates, 30000);
+
+    return () => {
+      clearInterval(updateIntervalId);
+      stopPriceUpdates(intervalId);
+    };
   }, [currentUser, navigate, itemsPerPage, onLogout]);
 
-  // Funções de manipulação de modais e ações permanecem iguais
   const handlePayBill = () => {
     setPixKey("");
     setValorPagamento("");
@@ -443,7 +595,6 @@ function Page_user({ currentUser, onLogout }) {
         </div>
       </div>
 
-      {/* O restante do JSX permanece igual */}
       <div className="row">
         <div className="col-md-6">
           <div className="card">
