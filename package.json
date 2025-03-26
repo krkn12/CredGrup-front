@@ -1,51 +1,22 @@
 {
-  "name": "frontend",
+  "name": "credgrup-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
-  "homepage": "https://krkn12.github.io/site-pagcontas",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "predeploy": "npm run build",
-    "start": "vite preview --port 3000"
+    "preview": "vite preview"
   },
   "dependencies": {
-    "axios": "^1.8.3",
-    "bootstrap": "^5.3.3",
-    "jspdf": "^3.0.0",
-    "jspdf-autotable": "^5.0.2",
-    "react": "^19.0.0",
-    "react-bootstrap-icons": "^1.11.5",
-    "react-dom": "^19.0.0",
-    "react-router-dom": "^7.3.0",
-    "recharts": "^2.15.1"
+    "axios": "^1.8.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.30.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.21.0",
-    "@types/react": "^19.0.10",
-    "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
-    "eslint": "^9.21.0",
-    "eslint-plugin-react-hooks": "^5.1.0",
-    "eslint-plugin-react-refresh": "^0.4.19",
-    "vite": "^6.2.0"
-  },
-  "engines": {
-    "node": ">=16.0.0"
-  },
-  "description": "Projeto React com Vite, pronto para deploy no GitHub Pages, Vercel, Netlify e Heroku.",
-  "main": "eslint.config.js",
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/krkn12/site-pagcontas.git"
-  },
-  "bugs": {
-    "url": "https://github.com/krkn12/site-pagcontas/issues"
+    "tailwindcss": "^3.4.17",
+    "vite": "^6.2.3"
   }
 }
