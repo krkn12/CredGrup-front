@@ -10,6 +10,7 @@ function Navbar() {
         <Link to="/" className="text-xl font-bold">CredGrup Fintech</Link>
         {user ? (
           <div className="space-x-4">
+            <Link to="/dashboard">Dashboard</Link>
             <Link to="/deposits">Depósitos</Link>
             <Link to="/payments">Pagamentos</Link>
             <Link to="/transactions">Transações</Link>
