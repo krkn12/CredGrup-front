@@ -1,53 +1,50 @@
-import { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
-import { AuthContext } from '../contexts/AuthContext';
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import api from '@/api/api';
+import '@/styles/dashboard.css';
 
-function Dashboard() {
-  const { user } = useContext(AuthContext);
-  const [wallet, setWallet] = useState(null);
+const Dashboard = () => {
+  const { user, logout } = useAuth();
+  const [balance, setBalance] = useState(0);
+  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchWallet = async () => {
+    const fetchData = async () => {
       try {
-        const { data } = await axios.get('/api/wallet/data', {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
-        setWallet(data);
+        const [balanceRes, transactionsRes] = await Promise.all([
+          api.get('/wallet'),
+          api.get('/transactions')
+        ]);
+        setBalance(balanceRes.data.balance);
+        setTransactions(transactionsRes.data);
       } catch (error) {
-        console.error('Erro ao carregar carteira:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchWallet();
+    
+    fetchData();
   }, []);
 
-  if (loading) return <p>Carregando...</p>;
+  if (loading) return <div>Carregando...</div>;
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>Bem-vindo, {user.name}</h1>
-      {wallet && (
-        <>
-          <h2>Carteira</h2>
-          <p>Saldo WBTC (BRL): {wallet.wbtcBalance.toFixed(2)}</p>
-          <p>Total Investido (BRL): {wallet.totalInvested.toFixed(2)}</p>
-          <p>Empréstimo Disponível (BRL): {wallet.loanAvailable.toFixed(2)}</p>
-          <p>Última Atualização: {new Date(wallet.lastUpdated).toLocaleString()}</p>
-          
-          <h3>Transações Recentes</h3>
-          <ul>
-            {wallet.recentTransactions.map((tx, index) => (
-              <li key={index}>
-                {tx.type} - {tx.amount.toFixed(2)} BRL - {new Date(tx.date).toLocaleString()}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+    <div className="dashboard-container">
+      <h1>Bem-vindo, {user?.name}</h1>
+      <div className="balance">Saldo: R$ {balance.toFixed(2)}</div>
+      
+      <h2>Últimas Transações</h2>
+      <ul className="transactions-list">
+        {transactions.map((transaction) => (
+          <li key={transaction.id}>
+            {transaction.description}: R$ {transaction.amount.toFixed(2)}
+          </li>
+        ))}
+      </ul>
     </div>
   );
-}
+};
 
 export default Dashboard;

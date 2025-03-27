@@ -1,27 +1,30 @@
-import { useState, useContext } from 'react';
+// src/pages/Auth/Login.jsx
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../contexts/AuthContext';
+import { useAuth } from '@/context/AuthContext';
+import '@/styles/auth.css'; // Estilo específico
 
-function Login() {
-  const { login } = useContext(AuthContext);
+const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      await login(email, password);
-      navigate('/dashboard');
-    } catch (error) {
-      setMessage('Erro ao fazer login: ' + error.response?.data?.message);
+    const result = await login(email, password);
+    if (result.success) {
+      navigate('/');
+    } else {
+      setError(result.message || 'Falha no login');
     }
   };
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>Login</h1>
+    <div className="auth-container">
+      <h2>Login CredGrup</h2>
+      {error && <div className="error-message">{error}</div>}
       <form onSubmit={handleSubmit}>
         <input
           type="email"
@@ -39,9 +42,8 @@ function Login() {
         />
         <button type="submit">Entrar</button>
       </form>
-      {message && <p>{message}</p>}
     </div>
   );
-}
+};
 
 export default Login;

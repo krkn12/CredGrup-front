@@ -1,43 +1,63 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import PrivateRoute from './components/PrivateRoute';
-import Navbar from './components/Navbar';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import Deposits from './pages/Deposits';
-import Payments from './pages/Payments';
-import Transactions from './pages/Transactions';
-import Loans from './pages/Loans';
-import Investments from './pages/Investments';
-import Profile from './pages/Profile';
-import KYC from './pages/KYC';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminConfig from './pages/AdminConfig';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import ProtectedRoute from '@/components/UI/ProtectedRoute';
+import Navbar from '@/components/UI/Navbar';
+import LoadingSpinner from '@/components/UI/LoadingSpinner';
+
+// Páginas (Lazy Loading)
+const Home = React.lazy(() => import('@/pages/Home'));
+const Login = React.lazy(() => import('@/pages/Auth/Login'));
+const Register = React.lazy(() => import('@/pages/Auth/Register'));
+const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
+const AdminPanel = React.lazy(() => import('@/pages/Admin/AdminPanel'));
+const UserProfile = React.lazy(() => import('@/pages/UserProfile'));
 
 function App() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingSpinner fullScreen />;
+  }
+
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/deposits" element={<PrivateRoute><Deposits /></PrivateRoute>} />
-          <Route path="/payments" element={<PrivateRoute><Payments /></PrivateRoute>} />
-          <Route path="/transactions" element={<PrivateRoute><Transactions /></PrivateRoute>} />
-          <Route path="/loans" element={<PrivateRoute><Loans /></PrivateRoute>} />
-          <Route path="/investments" element={<PrivateRoute><Investments /></PrivateRoute>} />
-          <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-          <Route path="/kyc" element={<PrivateRoute><KYC /></PrivateRoute>} />
-          <Route path="/admin" element={<PrivateRoute requiresAdmin><AdminDashboard /></PrivateRoute>} />
-          <Route path="/admin/config" element={<PrivateRoute requiresAdmin><AdminConfig /></PrivateRoute>} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <Router>
+      <Navbar />
+      <div className="app-container">
+        <React.Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            {/* Rota principal sempre redireciona para Home */}
+            <Route path="/" element={<Home />} />
+            
+            {/* Rotas públicas */}
+            <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
+            <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <Register />} />
+            
+            {/* Rotas protegidas */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <UserProfile />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin" element={
+              <ProtectedRoute adminOnly>
+                <AdminPanel />
+              </ProtectedRoute>
+            } />
+            
+            {/* Redirecionamento para Home se rota não existir */}
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </React.Suspense>
+      </div>
+    </Router>
   );
 }
 
