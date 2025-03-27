@@ -7,7 +7,7 @@ import { visualizer } from 'rollup-plugin-visualizer';
 export default defineConfig({
   plugins: [
     react(),
-    visualizer({  // Opcional: Analisar bundle (remova em produção)
+    visualizer({
       open: true,
       gzipSize: true,
       brotliSize: true,
@@ -34,13 +34,13 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'https://credgrup.click', // Ou 'http://localhost:5000' para dev
+        target: 'https://credgrup.click',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
-        secure: false // Apenas se estiver com certificado autoassinado
+        secure: false
       }
     },
-    open: true // Abre o navegador automaticamente
+    open: true
   },
 
   // Configurações de build
@@ -56,6 +56,11 @@ export default defineConfig({
         }
       }
     }
+  },
+
+  // Configurações otimizadas para dependências
+  optimizeDeps: {
+    include: ['yup']  // Correção: movido para optimizeDeps
   },
 
   // Configurações de CSS
