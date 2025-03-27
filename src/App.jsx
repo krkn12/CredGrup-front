@@ -5,6 +5,7 @@ import ProtectedRoute from '@/components/UI/ProtectedRoute';
 import Navbar from '@/components/UI/Navbar';
 import LoadingSpinner from '@/components/UI/LoadingSpinner';
 
+
 // Páginas (Lazy Loading)
 const Home = React.lazy(() => import('@/pages/Home'));
 const Login = React.lazy(() => import('@/pages/Auth/Login'));
