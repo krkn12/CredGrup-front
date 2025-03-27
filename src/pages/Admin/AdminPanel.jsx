@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/api/api';
 import AdminSidebar from '@/components/Admin/AdminSidebar';
-import '@/styles/admin.css';
+import '@/styles/admin-panel.css';
 
 const AdminPanel = () => {
   const { user, logout } = useAuth();

@@ -1,0 +1,50 @@
+/* src/styles/admin/admin.css */
+.admin-container {
+    display: flex;
+    min-height: 100vh;
+  }
+  
+  .admin-content {
+    flex: 1;
+    margin-left: 250px; /* Largura do sidebar */
+    padding: 2rem;
+  }
+  
+  .pending-requests {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .pending-requests h2 {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+  }
+  
+  .pending-requests ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .pending-requests li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .approve-btn {
+    background-color: #4a6bff;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .approve-btn:hover {
+    background-color: #3a5bef;
+  }
