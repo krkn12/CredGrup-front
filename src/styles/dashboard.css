@@ -1,0 +1,71 @@
+/* Estilos do Dashboard */
+.dashboard-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+  }
+  
+  .welcome-message {
+    font-size: 1.8rem;
+    color: #2c3e50;
+    margin-bottom: 2rem;
+  }
+  
+  .balance-card {
+    background: linear-gradient(135deg, #4a6bff 0%, #3a5bef 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .balance-card h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    opacity: 0.9;
+  }
+  
+  .balance-amount {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 0.5rem 0;
+  }
+  
+  .transactions-section {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .transactions-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .transaction-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 0;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .transaction-description {
+    font-weight: 500;
+  }
+  
+  .transaction-amount.positive {
+    color: #2ecc71;
+  }
+  
+  .transaction-amount.negative {
+    color: #e74c3c;
+  }
+  
+  .loading-state {
+    text-align: center;
+    padding: 2rem;
+    color: #7f8c8d;
+  }
