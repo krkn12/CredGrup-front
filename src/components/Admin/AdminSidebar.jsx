@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import './styles/admin-sidebar.css';
+import './styles/admin/admin-sidebar.css';
 
 const AdminSidebar = () => {
   return (
